@@ -85,6 +85,12 @@
 #ifndef OV_CUT_FLIP
 #define OV_CUT_FLIP 0
 #endif
+// OV_CUT_FLIP_ALL: with OV_CUT_FLIP, flip a uniformly chosen connected block of H2
+// (OV_CUT_MASKS) instead of only the block containing the last qubit. Needed when H2 has more
+// than two blocks (4x4 with both midline cuts: four quadrants).
+#ifndef OV_CUT_FLIP_ALL
+#define OV_CUT_FLIP_ALL 0
+#endif
 #ifndef OV_CUT_FLIP_PROB
 #define OV_CUT_FLIP_PROB 0.5
 #endif

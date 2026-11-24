@@ -3754,9 +3754,21 @@ public:
 #if defined(OVERLAP_PLUS) && OV_CUT_FLIP
             // [OV_CUT_FLIP] Block flip of one side of the cut, in y0 and so at every
             // imaginary time. Self-inverse, proposal symmetric -> plain Metropolis.
-            if(OV_CUT_MASK.any() && local_val(local_rng) < OV_CUT_FLIP_PROB) {
+#if OV_CUT_FLIP_ALL
+            // [OV_CUT_FLIP_ALL] flip one connected block of H2, chosen uniformly (still an
+            // involution with a symmetric proposal).
+            const bool ov_cut_on = OV_NCUT > 0;
+#else
+            const bool ov_cut_on = OV_CUT_MASK.any();
+#endif
+            if(ov_cut_on && local_val(local_rng) < OV_CUT_FLIP_PROB) {
                 const ExExFloat savedWeight = currWeight;
-                for(int rep = 0; rep < alpha; rep++) lattice[rep] ^= OV_CUT_MASK;
+#if OV_CUT_FLIP_ALL
+                const std::bitset<N> cut_mask = OV_CUT_MASKS[std::uniform_int_distribution<int>(0, OV_NCUT - 1)(local_rng)];
+#else
+                const std::bitset<N> cut_mask = OV_CUT_MASK;
+#endif
+                for(int rep = 0; rep < alpha; rep++) lattice[rep] ^= cut_mask;
                 InvalidateCache();
                 newWeight = UpdateWeight();
                 cutflip_attempts++;
@@ -3765,7 +3777,7 @@ public:
                     currWeight = newWeight;
                     UpdateReferenceConfigs();
                 } else {
-                    for(int rep = 0; rep < alpha; rep++) lattice[rep] ^= OV_CUT_MASK;
+                    for(int rep = 0; rep < alpha; rep++) lattice[rep] ^= cut_mask;
                     InvalidateCache();
                     currWeight = savedWeight;
                 }

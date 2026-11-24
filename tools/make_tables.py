@@ -174,6 +174,14 @@ def main():
     if side == (1 << N) - 1:
         side = 0
     o.append(f'const std::bitset<N> OV_CUT_MASK = {bs(side, N)};   // {bin(side).count("1")} qubits')
+    # [OV_CUT_FLIP_ALL] every connected component of H2's interaction graph (empty list when
+    # H2 is connected); replica.hpp flips one, chosen uniformly, when OV_CUT_FLIP_ALL is set.
+    roots = sorted({find(i) for i in range(N)})
+    comps = [sum(1 << i for i in range(N) if find(i) == r) for r in roots] if len(roots) > 1 else []
+    o.append(f'const int OV_NCUT = {len(comps)};')
+    o.append('const std::bitset<N> OV_CUT_MASKS[' + str(max(1, len(comps))) + '] = {' +
+             ', '.join(bs(c, N) for c in (comps or [0])) + '};   // sizes ' +
+             ' '.join(str(bin(c).count('1')) for c in comps))
     print('\n'.join(o))
 
 
