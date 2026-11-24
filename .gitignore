@@ -18,3 +18,7 @@ models/**
 !models/*/runs/
 !models/*/runs/*/
 !models/*/runs/*/log.txt
+# paper run logs (tables VIII, IX, 4x4 benchmark)
+!models/*/runs_*/
+!models/*/runs_*/*/
+!models/*/runs_*/*/log.txt

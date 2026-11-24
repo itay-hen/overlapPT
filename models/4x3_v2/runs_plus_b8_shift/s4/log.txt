@@ -1,0 +1,147 @@
+
+  [F10 note] qmax=192 >= 171 -- factorial[k] (mainQMC.hpp, plain double) is inf for k>=171, but verified benign: it's never indexed by q, only by small cycle-length/operator-support values independent of qmax. See mbar_common.hpp's check_numerics_bounds for the verification.
+═══════════════════════════════════════════════════
+  OVERLAP_PLUS  |+> trial state, beta=8 (tau=4 per segment)
+  N=12  interpolation ladder: 17 rungs (0,0) -> (0,1) -> (1,1)
+  T_equil=10000  N_samples=10000  steps_per_sample=10  ranks=1
+═══════════════════════════════════════════════════
+
+── MBAR+PT pipeline (MPI)  alpha=2  beta_target=1  ranks=1  K_local=17 ──────────────
+  [FIXED STRIDE] recording stride pinned at factor 1 = 10 MC steps per recorded sample; automatic stride calibration is OFF.
+
+[1/3] Thermalizing 17 replicas (10000 steps each)...
+  Thermalization complete.
+  qmax_achieved on 0/1 ranks
+
+[2/3] Collecting 170000 total samples (10000 per rung)...
+  1000/10000 samples  elapsed=460.424s
+    q occupancy: mean=39.0588  max=70  (qmax=192)
+    swap fallback: 0/1137 this block (0.0%)
+  2000/10000 samples  elapsed=783.1s
+    q occupancy: mean=41.5  max=63.0  (qmax=192)
+    swap fallback: 0/1109 this block (0.0%)
+  3000/10000 samples  elapsed=1094.9s
+    q occupancy: mean=43.9  max=72.0  (qmax=192)
+    swap fallback: 0/1107 this block (0.0%)
+  4000/10000 samples  elapsed=1407.0s
+    q occupancy: mean=43.2  max=57.0  (qmax=192)
+    swap fallback: 0/1061 this block (0.0%)
+  5000/10000 samples  elapsed=1688.4s
+    q occupancy: mean=47.9  max=74.0  (qmax=192)
+    swap fallback: 0/1093 this block (0.0%)
+  6000/10000 samples  elapsed=2014.7s
+    q occupancy: mean=47.5  max=66.0  (qmax=192)
+    swap fallback: 0/1185 this block (0.0%)
+  7000/10000 samples  elapsed=2341.5s
+    q occupancy: mean=42.8  max=59.0  (qmax=192)
+    swap fallback: 0/1154 this block (0.0%)
+  8000/10000 samples  elapsed=2650.6s
+    q occupancy: mean=46.2  max=68.0  (qmax=192)
+    swap fallback: 0/1043 this block (0.0%)
+  9000/10000 samples  elapsed=2967.8s
+    q occupancy: mean=43.9  max=61.0  (qmax=192)
+    swap fallback: 0/1196 this block (0.0%)
+  Sampling complete.  PT swap acceptance: 76.4%
+  Effective MC steps this phase: 100000  (final recording stride=1)
+  [qmax sizing] observed max q_99.9 across all rungs = 81  ->  recommended qmax >= 122 (audit rule: qmax > 1.5 * q_99.9; current qmax=192)
+
+[DIAG bias-vs-N] Progressive ln_Z_2(beta_target) using increasing sample-count PREFIXES (as if the run had
+  stopped early) -- checking whether the estimate trends toward the truth as N grows,
+  the signature of a finite-sample MBAR/BAR bias:
+   25% (2500/rung, raw/unthinned):  ln F = -6.25424733e-01
+   50% (5000/rung, raw/unthinned):  ln F = -8.78658067e-01
+   75% (7500/rung, raw/unthinned):  ln F = -8.48129791e-01
+  100% (10000/rung, raw/unthinned):  ln F = -6.33466377e-01
+  (the 100% row above is the all-sample point estimate: the same solver on the same data as the official RESULTS line below, which since 2026-10-09 also uses all recorded samples -- the two ln Z values should be identical.)
+
+[2.5/3] Autocorrelation analysis...
+    rung  0  beta=0.0000  tau_int=4.36 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=9714  [DIAG u-spread] u_mean=-4.2076e+01  u_stddev=3.0903e+01  n_finite=170000
+    rung  1  beta=0.0625  tau_int=2.76 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=9645  [DIAG u-spread] u_mean=-4.1159e+01  u_stddev=3.0710e+01  n_finite=170000
+    rung  2  beta=0.1250  tau_int=1.59 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=9511  [DIAG u-spread] u_mean=-4.0270e+01  u_stddev=3.0518e+01  n_finite=170000
+    rung  3  beta=0.1875  tau_int=1.19 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=9365  [DIAG u-spread] u_mean=-3.9407e+01  u_stddev=3.0330e+01  n_finite=170000
+    rung  4  beta=0.2500  tau_int=1.33 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=9167  [DIAG u-spread] u_mean=-3.8569e+01  u_stddev=3.0149e+01  n_finite=170000
+    rung  5  beta=0.3125  tau_int=1.37 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=9076  [DIAG u-spread] u_mean=-3.7747e+01  u_stddev=2.9982e+01  n_finite=170000
+    rung  6  beta=0.3750  tau_int=1.54 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=8801  [DIAG u-spread] u_mean=-3.6924e+01  u_stddev=2.9842e+01  n_finite=170000
+    rung  7  beta=0.4375  tau_int=1.78 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=8628  [DIAG u-spread] u_mean=-3.6040e+01  u_stddev=2.9760e+01  n_finite=170000
+    rung  8  beta=0.5000  tau_int=1.99 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=8473  [DIAG u-spread] u_mean=-2.8538e+01  u_stddev=3.5137e+01  n_finite=170000
+    rung  9  beta=0.5625  tau_int=1.18 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=7914  [DIAG u-spread] u_mean=-2.7172e+01  u_stddev=3.5137e+01  n_finite=170000
+    rung 10  beta=0.6250  tau_int=1.15 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=7201  [DIAG u-spread] u_mean=-2.5774e+01  u_stddev=3.5167e+01  n_finite=170000
+    rung 11  beta=0.6875  tau_int=0.99 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=6253  [DIAG u-spread] u_mean=-2.4327e+01  u_stddev=3.5241e+01  n_finite=170000
+    rung 12  beta=0.7500  tau_int=0.95 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=5180  [DIAG u-spread] u_mean=-2.2798e+01  u_stddev=3.5379e+01  n_finite=170000
+    rung 13  beta=0.8125  tau_int=1.17 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=3946  [DIAG u-spread] u_mean=-2.1126e+01  u_stddev=3.5624e+01  n_finite=170000
+    rung 14  beta=0.8750  tau_int=2.75 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=2530  [DIAG u-spread] u_mean=-1.9167e+01  u_stddev=3.6067e+01  n_finite=170000
+    rung 15  beta=0.9375  tau_int=15.19 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=1130  [DIAG u-spread] u_mean=-1.6457e+01  u_stddev=3.7002e+01  n_finite=170000
+    rung 16  beta=1.0000  tau_int=68.78 samples  zero_weight=0/10000 (0.0%)  m0_full=0  m0_partial=0  [DIAG u-spread] u_mean=-3.1924e+01  u_stddev=2.7662e+01  n_finite=53466
+  [DIAG zero-weight] total = 0/170000  (0.0%) -- fully-1e300 rows suspected of contaminating solve_mbar_mpi's log-sum-exp via exact 1e300-1e300 cancellation (see comment at zero_weight_local's declaration).
+  [DIAG m==0] full-row (all K columns m==0.0, nt!=0) = 0/170000  (0.0%)  -- these are the dangerous ones: a beta-INDEPENDENT structural zero (e.g. REALW(D0*D1*D2)==0 for every j) reproduces the same whole-row 1e300-1e300 cancellation as the already-falsified nt==0 theory, just via a different trigger nt==0 doesn't see.
+  [DIAG m==0] partial-row (some but not all K columns) = 116534/170000  (68.5%)  -- comparatively harmless: >=1 finite column keeps log_denom[n] finite, so these are correctly suppressed rather than phantom-weighted.
+  [DIAG u-spread] compare u_mean/u_stddev across rungs above: if they're essentially flat despite beta spanning 0.0 to 1.0, the per-sample weight itself isn't beta-differentiated -- independent of which specific mechanism explains why.
+
+  [DIAG lattice] per-rung lattice sector (sampling phase; compare E0/q with tools/ed_observables.py):
+    rung     beta    <E0>     se(E0)  tau_E     <q>   tau_q  distinct  changes  flip_acc  block_acc  comp_acc  PTacc(pair r,r+1)
+       0   0.0000  -5.0480   0.1031     0.9   40.96     3.6      1701     9333    0.0001    -1.0000    0.6455     0.850 (16996/20000)
+       1   0.0625  -5.0106   0.1016     0.8   40.87     2.4      1690     9536    0.0000    -1.0000    0.6417     0.827 (16546/20000)
+       2   0.1250  -5.0440   0.1060     0.7   41.05     1.4      1711     9853    0.0002    -1.0000    0.6345     0.819 (16388/20000)
+       3   0.1875  -5.0822   0.0787     0.7   41.49     1.1      1679     9804    0.0001    -1.0000    0.6299     0.802 (16031/20000)
+       4   0.2500  -5.2288   0.0935     0.7   41.98     1.1      1666     9800    0.0001    -1.0000    0.6244     0.776 (15514/20000)
+       5   0.3125  -5.1256   0.1041     0.7   42.55     1.2      1624     9732    0.0001    -1.0000    0.6148     0.744 (14871/20000)
+       6   0.3750  -5.1134   0.0924     0.7   43.38     1.4      1530     9640    0.0001    -1.0000    0.6109     0.693 (13864/20000)
+       7   0.4375  -5.3048   0.0890     0.7   44.50     1.7      1343     9675    0.0001    -1.0000    0.6040     0.650 (12992/20000)
+       8   0.5000  -5.3306   0.0767     0.7   45.29     2.0       936     9616    0.0002    -1.0000    0.6045     0.836 (16719/20000)
+       9   0.5625  -5.2442   0.0868     0.7   44.96     1.2       938     9755    0.0004    -1.0000    0.6063     0.829 (16576/20000)
+      10   0.6250  -5.1840   0.0933     0.7   45.10     1.2       928     9856    0.0001    -1.0000    0.6062     0.810 (16199/20000)
+      11   0.6875  -5.3736   0.0803     0.7   45.32     1.0       924     9782    0.0002    -1.0000    0.6077     0.789 (15780/20000)
+      12   0.7500  -5.2366   0.0753     0.7   45.65     0.9       933     9766    0.0000    -1.0000    0.6111     0.761 (15221/20000)
+      13   0.8125  -5.3088   0.0812     0.7   46.25     1.1       922     9716    0.0001    -1.0000    0.6137     0.731 (14622/20000)
+      14   0.8750  -5.3442   0.0964     0.7   47.01     2.4       910     9634    0.0000    -1.0000    0.6154     0.677 (13539/20000)
+      15   0.9375  -5.2288   0.0611     0.9   47.75    13.4       915     9186    0.0003    -1.0000    0.6180     0.628 (12565/20000)
+      16   1.0000  -5.2322   0.1049     1.6   48.17    54.0       891     8399    0.0000    -1.0000    0.6239
+  [DIAG lattice] PT round trips (bottom->top->bottom) during sampling: 227   bottom->top arrivals: 227   (a healthy ladder makes >= 10 round trips per run; 0-2 means the top rungs are effectively isolated)
+  max tau_int = 68.78 samples  →  block_len=69  (bootstrap block length; the point estimate uses all 10000 samples per rung, not thinned)
+
+[3/3] Running MBAR (distributed)...
+  Point estimate: ALL 10000 recorded samples per rung (not thinned).
+  Running MBAR (distributed MPI+Anderson, m=5)...
+    iter    0  max_residual = 4.56
+    iter   10  max_residual = 0.00
+    Converged at iter 10  (max_residual = 0.00)
+
+  [MBAR overlap] adjacent-rung overlaps O(i,i+1):
+    0.201 0.159 0.135 0.120 0.110 0.104 0.101 0.109
+    0.130 0.112 0.105 0.106 0.114 0.131 0.162 0.242
+  [MBAR overlap] minimum 0.1014 between rungs 6 and 7
+
+[3.5/3] Block bootstrap uncertainty (200 replicates)...
+  (subsampling to 72/144 blocks/replicate for memory; scaling stderr by sqrt(72/144))
+  bootstrap 50/200
+  bootstrap 100/200
+  bootstrap 150/200
+  bootstrap 200/200
+  [bootstrap block scan] block length -> stderr of reported statistic:
+    69 -> 9.060e-02
+    276 -> 1.444e-01
+  WARNING: the bootstrap error grows with block length (x1.59); the per-run error bar is not stable -- use the spread over independent runs.
+  Bootstrap stderr(ln Z_2) = 9.0604e-02  (boot mean f[0]=-6.3510e-01  main f[0]=-1.7487e+01)
+
+  ln Z_2(beta_target) = -6.33466377e-01  (anchor=0.00000000e+00  f[0]=-1.74866739e+01)
+
+  Full beta-ladder (f[j] = ln Z_2(beta_target) - ln Z_2(beta_j)):
+    beta=0.00000  f=-1.7487e+01  ln_Z=1.6853e+01
+    beta=0.06250  f=-1.5980e+01  ln_Z=1.5346e+01
+    beta=0.12500  f=-1.4529e+01  ln_Z=1.3895e+01
+    beta=0.18750  f=-1.3146e+01  ln_Z=1.2513e+01
+    beta=0.25000  f=-1.1851e+01  ln_Z=1.1218e+01
+    beta=0.31250  f=-1.0673e+01  ln_Z=1.0039e+01
+    beta=0.37500  f=-9.6574e+00  ln_Z=9.0240e+00
+    beta=0.43750  f=-8.8779e+00  ln_Z=8.2444e+00
+    beta=0.50000  f=-8.4266e+00  ln_Z=7.7931e+00
+    beta=0.56250  f=-6.9382e+00  ln_Z=6.3047e+00
+    beta=0.62500  f=-5.5120e+00  ln_Z=4.8786e+00
+    beta=0.68750  f=-4.1623e+00  ln_Z=3.5288e+00
+    beta=0.75000  f=-2.9123e+00  ln_Z=2.2788e+00
+    beta=0.81250  f=-1.7998e+00  ln_Z=1.1663e+00
+    beta=0.87500  f=-8.8407e-01  ln_Z=2.5060e-01
+    beta=0.93750  f=-2.5075e-01  ln_Z=-3.8272e-01
+    beta=1.00000  f=0.0000e+00  ln_Z=-6.3347e-01
+
+  RESULT  beta=8.0000e+00  lnF=-6.3346637739e-01  stderr=9.0603981898e-02  F=5.3074883288e-01

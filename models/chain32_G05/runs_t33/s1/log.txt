@@ -1,0 +1,201 @@
+
+  [F10 note] qmax=600 >= 171 -- factorial[k] (mainQMC.hpp, plain double) is inf for k>=171, but verified benign: it's never indexed by q, only by small cycle-length/operator-support values independent of qmax. See mbar_common.hpp's check_numerics_bounds for the verification.
+═══════════════════════════════════════════════════
+  OVERLAP_PLUS  |+> trial state, beta=16 (tau=8 per segment)
+  N=32  interpolation ladder: 33 rungs (0,0) -> (0,1) -> (1,1)
+  T_equil=2000  N_samples=400  steps_per_sample=10  ranks=1
+═══════════════════════════════════════════════════
+
+── MBAR+PT pipeline (MPI)  alpha=2  beta_target=1  ranks=1  K_local=33 ──────────────
+  [FIXED STRIDE] recording stride pinned at factor 1 = 10 MC steps per recorded sample; automatic stride calibration is OFF.
+
+[1/3] Thermalizing 33 replicas (2000 steps each)...
+  Thermalization complete.
+  qmax_achieved on 0/1 ranks
+
+[2/3] Collecting 13200 total samples (400 per rung)...
+  40/400 samples  elapsed=289.888s
+    q occupancy: mean=69.2727  max=86  (qmax=600)
+    swap fallback: 0/77 this block (0.0%)
+  80/400 samples  elapsed=422.3s
+    q occupancy: mean=72.3  max=97.0  (qmax=600)
+    swap fallback: 0/84 this block (0.0%)
+  120/400 samples  elapsed=555.5s
+    q occupancy: mean=72.7  max=98.0  (qmax=600)
+    swap fallback: 0/83 this block (0.0%)
+  160/400 samples  elapsed=692.9s
+    q occupancy: mean=75.4  max=110.0  (qmax=600)
+    swap fallback: 0/86 this block (0.0%)
+  200/400 samples  elapsed=838.0s
+    q occupancy: mean=78.2  max=111.0  (qmax=600)
+    swap fallback: 0/101 this block (0.0%)
+  240/400 samples  elapsed=972.6s
+    q occupancy: mean=80.4  max=109.0  (qmax=600)
+    swap fallback: 0/85 this block (0.0%)
+  280/400 samples  elapsed=1111.1s
+    q occupancy: mean=79.5  max=116.0  (qmax=600)
+    swap fallback: 0/83 this block (0.0%)
+  320/400 samples  elapsed=1254.6s
+    q occupancy: mean=79.8  max=117.0  (qmax=600)
+    swap fallback: 0/75 this block (0.0%)
+  360/400 samples  elapsed=1396.1s
+    q occupancy: mean=81.6  max=115.0  (qmax=600)
+    swap fallback: 0/81 this block (0.0%)
+  Sampling complete.  PT swap acceptance: 90.1%
+  Effective MC steps this phase: 4000  (final recording stride=1)
+  [qmax sizing] observed max q_99.9 across all rungs = 125  ->  recommended qmax >= 188 (audit rule: qmax > 1.5 * q_99.9; current qmax=600)
+
+[DIAG bias-vs-N] Progressive ln_Z_2(beta_target) using increasing sample-count PREFIXES (as if the run had
+  stopped early) -- checking whether the estimate trends toward the truth as N grows,
+  the signature of a finite-sample MBAR/BAR bias:
+   25% (100/rung, raw/unthinned):  ln F = -6.36179085e+00
+   50% (200/rung, raw/unthinned):  ln F = -6.16442623e+00
+   75% (300/rung, raw/unthinned):  ln F = -5.86656614e+00
+  100% (400/rung, raw/unthinned):  ln F = -5.72623819e+00
+  (the 100% row above is the all-sample point estimate: the same solver on the same data as the official RESULTS line below, which since 2026-10-09 also uses all recorded samples -- the two ln Z values should be identical.)
+
+[2.5/3] Autocorrelation analysis...
+    rung  0  beta=0.0000  tau_int=1.19 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=294  [DIAG u-spread] u_mean=-3.0844e+02  u_stddev=4.8102e+01  n_finite=13200
+    rung  1  beta=0.0312  tau_int=0.58 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=290  [DIAG u-spread] u_mean=-3.0829e+02  u_stddev=4.7972e+01  n_finite=13200
+    rung  2  beta=0.0625  tau_int=0.77 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=284  [DIAG u-spread] u_mean=-3.0814e+02  u_stddev=4.7844e+01  n_finite=13200
+    rung  3  beta=0.0938  tau_int=0.77 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=266  [DIAG u-spread] u_mean=-3.0799e+02  u_stddev=4.7719e+01  n_finite=13200
+    rung  4  beta=0.1250  tau_int=0.60 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=257  [DIAG u-spread] u_mean=-3.0784e+02  u_stddev=4.7597e+01  n_finite=13200
+    rung  5  beta=0.1562  tau_int=0.64 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=268  [DIAG u-spread] u_mean=-3.0769e+02  u_stddev=4.7478e+01  n_finite=13200
+    rung  6  beta=0.1875  tau_int=0.57 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=246  [DIAG u-spread] u_mean=-3.0754e+02  u_stddev=4.7363e+01  n_finite=13200
+    rung  7  beta=0.2188  tau_int=0.59 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=232  [DIAG u-spread] u_mean=-3.0740e+02  u_stddev=4.7250e+01  n_finite=13200
+    rung  8  beta=0.2500  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=229  [DIAG u-spread] u_mean=-3.0726e+02  u_stddev=4.7141e+01  n_finite=13200
+    rung  9  beta=0.2812  tau_int=0.59 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=226  [DIAG u-spread] u_mean=-3.0711e+02  u_stddev=4.7035e+01  n_finite=13200
+    rung 10  beta=0.3125  tau_int=0.62 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=214  [DIAG u-spread] u_mean=-3.0697e+02  u_stddev=4.6933e+01  n_finite=13200
+    rung 11  beta=0.3438  tau_int=0.55 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=191  [DIAG u-spread] u_mean=-3.0683e+02  u_stddev=4.6834e+01  n_finite=13200
+    rung 12  beta=0.3750  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=193  [DIAG u-spread] u_mean=-3.0668e+02  u_stddev=4.6740e+01  n_finite=13200
+    rung 13  beta=0.4062  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=192  [DIAG u-spread] u_mean=-3.0653e+02  u_stddev=4.6649e+01  n_finite=13200
+    rung 14  beta=0.4375  tau_int=0.73 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=167  [DIAG u-spread] u_mean=-3.0637e+02  u_stddev=4.6562e+01  n_finite=13200
+    rung 15  beta=0.4688  tau_int=0.51 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=136  [DIAG u-spread] u_mean=-3.0618e+02  u_stddev=4.6480e+01  n_finite=13200
+    rung 16  beta=0.5000  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=135  [DIAG u-spread] u_mean=-3.0290e+02  u_stddev=5.0180e+01  n_finite=13200
+    rung 17  beta=0.5312  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=133  [DIAG u-spread] u_mean=-3.0259e+02  u_stddev=5.0154e+01  n_finite=13200
+    rung 18  beta=0.5625  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=101  [DIAG u-spread] u_mean=-3.0228e+02  u_stddev=5.0132e+01  n_finite=13200
+    rung 19  beta=0.5938  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=89  [DIAG u-spread] u_mean=-3.0197e+02  u_stddev=5.0113e+01  n_finite=13200
+    rung 20  beta=0.6250  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=97  [DIAG u-spread] u_mean=-3.0166e+02  u_stddev=5.0099e+01  n_finite=13200
+    rung 21  beta=0.6562  tau_int=0.56 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=80  [DIAG u-spread] u_mean=-3.0134e+02  u_stddev=5.0088e+01  n_finite=13200
+    rung 22  beta=0.6875  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=69  [DIAG u-spread] u_mean=-3.0102e+02  u_stddev=5.0083e+01  n_finite=13200
+    rung 23  beta=0.7188  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=87  [DIAG u-spread] u_mean=-3.0069e+02  u_stddev=5.0082e+01  n_finite=13200
+    rung 24  beta=0.7500  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=69  [DIAG u-spread] u_mean=-3.0036e+02  u_stddev=5.0088e+01  n_finite=13200
+    rung 25  beta=0.7812  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=72  [DIAG u-spread] u_mean=-3.0001e+02  u_stddev=5.0101e+01  n_finite=13200
+    rung 26  beta=0.8125  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=78  [DIAG u-spread] u_mean=-2.9965e+02  u_stddev=5.0122e+01  n_finite=13200
+    rung 27  beta=0.8438  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=61  [DIAG u-spread] u_mean=-2.9927e+02  u_stddev=5.0154e+01  n_finite=13200
+    rung 28  beta=0.8750  tau_int=0.52 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=63  [DIAG u-spread] u_mean=-2.9886e+02  u_stddev=5.0200e+01  n_finite=13200
+    rung 29  beta=0.9062  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=63  [DIAG u-spread] u_mean=-2.9840e+02  u_stddev=5.0269e+01  n_finite=13200
+    rung 30  beta=0.9375  tau_int=0.50 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=41  [DIAG u-spread] u_mean=-2.9784e+02  u_stddev=5.0377e+01  n_finite=13200
+    rung 31  beta=0.9688  tau_int=0.57 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=17  [DIAG u-spread] u_mean=-2.9703e+02  u_stddev=5.0580e+01  n_finite=13200
+    rung 32  beta=1.0000  tau_int=0.78 samples  zero_weight=0/400 (0.0%)  m0_full=0  m0_partial=0  [DIAG u-spread] u_mean=-3.0482e+02  u_stddev=4.8254e+01  n_finite=8260
+  [DIAG zero-weight] total = 0/13200  (0.0%) -- fully-1e300 rows suspected of contaminating solve_mbar_mpi's log-sum-exp via exact 1e300-1e300 cancellation (see comment at zero_weight_local's declaration).
+  [DIAG m==0] full-row (all K columns m==0.0, nt!=0) = 0/13200  (0.0%)  -- these are the dangerous ones: a beta-INDEPENDENT structural zero (e.g. REALW(D0*D1*D2)==0 for every j) reproduces the same whole-row 1e300-1e300 cancellation as the already-falsified nt==0 theory, just via a different trigger nt==0 doesn't see.
+  [DIAG m==0] partial-row (some but not all K columns) = 4940/13200  (37.4%)  -- comparatively harmless: >=1 finite column keeps log_denom[n] finite, so these are correctly suppressed rather than phantom-weighted.
+  [DIAG u-spread] compare u_mean/u_stddev across rungs above: if they're essentially flat despite beta spanning 0.0 to 1.0, the per-sample weight itself isn't beta-differentiated -- independent of which specific mechanism explains why.
+
+  [DIAG lattice] per-rung lattice sector (sampling phase; compare E0/q with tools/ed_observables.py):
+    rung     beta    <E0>     se(E0)  tau_E     <q>   tau_q  distinct  changes  flip_acc  block_acc  comp_acc  PTacc(pair r,r+1)
+       0   0.0000 -16.7150   0.3491     0.9   74.04     3.8       361      385    0.0121    -1.0000    0.6926     0.944 (755/800)
+       1   0.0312 -16.6200   0.4356     0.8   73.65     1.8       368      390    0.0135    -1.0000    0.6963     0.945 (756/800)
+       2   0.0625 -16.9050   0.4799     0.8   73.81     1.4       380      399    0.0101    -1.0000    0.7010     0.948 (758/800)
+       3   0.0938 -16.6000   0.3584     0.8   74.57     2.4       377      398    0.0122    -1.0000    0.6903     0.934 (747/800)
+       4   0.1250 -16.6400   0.2831     0.5   73.77     2.2       383      399    0.0071    -1.0000    0.6975     0.953 (762/800)
+       5   0.1562 -16.6750   0.2978     0.5   74.34     1.2       377      399    0.0234    -1.0000    0.6964     0.953 (762/800)
+       6   0.1875 -16.4200   0.3270     0.5   74.45     2.1       382      399    0.0155    -1.0000    0.6907     0.946 (757/800)
+       7   0.2188 -16.1250   0.3629     0.5   74.97     1.6       386      399    0.0088    -1.0000    0.6953     0.935 (748/800)
+       8   0.2500 -16.1800   0.3200     0.6   74.93     0.5       387      398    0.0131    -1.0000    0.6967     0.946 (757/800)
+       9   0.2812 -16.4300   0.3248     0.5   74.58     0.9       388      399    0.0140    -1.0000    0.6969     0.916 (733/800)
+      10   0.3125 -15.7200   0.3048     0.6   75.63     1.8       392      399    0.0127    -1.0000    0.6880     0.938 (750/800)
+      11   0.3438 -15.9200   0.2411     0.5   75.25     0.9       390      399    0.0118    -1.0000    0.6845     0.941 (753/800)
+      12   0.3750 -16.1750   0.2815     0.5   75.29     0.5       386      399    0.0103    -1.0000    0.6963     0.910 (728/800)
+      13   0.4062 -15.8500   0.2261     0.5   75.32     0.7       380      398    0.0122    -1.0000    0.6939     0.900 (720/800)
+      14   0.4375 -15.7500   0.2776     0.7   75.55     4.3       385      395    0.0131    -1.0000    0.6898     0.876 (701/800)
+      15   0.4688 -15.4950   0.3219     0.6   75.98     0.9       391      399    0.0100    -1.0000    0.6882     0.820 (656/800)
+      16   0.5000 -15.4900   0.3181     0.5   77.17     0.7       381      398    0.0141    -1.0000    0.6834     0.955 (764/800)
+      17   0.5312 -15.4900   0.2403     0.5   76.41     0.9       391      399    0.0065    -1.0000    0.6934     0.921 (737/800)
+      18   0.5625 -15.3000   0.2609     0.6   75.97     2.0       392      399    0.0123    -1.0000    0.6850     0.927 (742/800)
+      19   0.5938 -15.5350   0.3749     0.6   77.06     0.9       392      397    0.0138    -1.0000    0.6834     0.906 (725/800)
+      20   0.6250 -15.4050   0.3419     0.6   77.73     0.6       379      397    0.0126    -1.0000    0.6908     0.886 (709/800)
+      21   0.6562 -15.3000   0.3415     0.6   77.31     1.0       382      396    0.0105    -1.0000    0.6818     0.850 (680/800)
+      22   0.6875 -15.2100   0.3204     0.7   77.38     1.0       386      398    0.0202    -1.0000    0.6972     0.854 (683/800)
+      23   0.7188 -15.2450   0.3497     0.6   77.66     0.8       376      396    0.0148    -1.0000    0.6744     0.834 (667/800)
+      24   0.7500 -15.4200   0.2659     0.5   78.46     1.0       371      397    0.0104    -1.0000    0.6756     0.819 (655/800)
+      25   0.7812 -15.2200   0.3505     0.6   78.84     0.5       373      398    0.0080    -1.0000    0.6823     0.826 (661/800)
+      26   0.8125 -15.1050   0.3173     0.6   77.63     0.7       376      397    0.0132    -1.0000    0.6969     0.820 (656/800)
+      27   0.8438 -15.3000   0.3528     0.5   77.59     0.9       371      396    0.0099    -1.0000    0.6982     0.861 (689/800)
+      28   0.8750 -15.2250   0.2761     0.5   76.74     1.4       364      396    0.0111    -1.0000    0.6944     0.885 (708/800)
+      29   0.9062 -15.2200   0.3104     0.5   76.79     1.4       362      394    0.0133    -1.0000    0.6809     0.881 (705/800)
+      30   0.9375 -15.5600   0.3685     0.7   76.67     1.2       359      395    0.0165    -1.0000    0.6840     0.902 (722/800)
+      31   0.9688 -15.4500   0.3669     0.7   76.23     1.3       357      393    0.0134    -1.0000    0.6918     0.901 (721/800)
+      32   1.0000 -15.6150   0.3259     0.7   76.67     8.2       344      387    0.0101    -1.0000    0.6936
+  [DIAG lattice] PT round trips (bottom->top->bottom) during sampling: 3   bottom->top arrivals: 0   (a healthy ladder makes >= 10 round trips per run; 0-2 means the top rungs are effectively isolated)
+  max tau_int = 1.19 samples  →  block_len=2  (bootstrap block length; the point estimate uses all 400 samples per rung, not thinned)
+
+[3/3] Running MBAR (distributed)...
+  Point estimate: ALL 400 recorded samples per rung (not thinned).
+  Running MBAR (distributed MPI+Anderson, m=5)...
+    iter    0  max_residual = 2.09
+    iter   10  max_residual = 0.00
+    iter   12  max_residual = 0.00
+    Converged at iter 12  (max_residual = 0.00)
+
+  [MBAR overlap] adjacent-rung overlaps O(i,i+1):
+    0.088 0.078 0.071 0.066 0.062 0.058 0.056 0.054
+    0.053 0.052 0.051 0.050 0.049 0.050 0.050 0.053
+    0.057 0.058 0.058 0.058 0.058 0.059 0.060 0.061
+    0.066 0.073 0.084 0.095 0.106 0.117 0.129 0.147
+  [MBAR overlap] minimum 0.0494 between rungs 12 and 13
+
+[3.5/3] Block bootstrap uncertainty (200 replicates)...
+  bootstrap 50/200
+  bootstrap 100/200
+  bootstrap 150/200
+  bootstrap 200/200
+  [bootstrap block scan] block length -> stderr of reported statistic:
+    2 -> 4.082e-02
+    5 -> 6.979e-02
+    19 -> 1.424e-01
+  WARNING: the bootstrap error grows with block length (x3.49); the per-run error bar is not stable -- use the spread over independent runs.
+  Bootstrap stderr(ln Z_2) = 4.0821e-02  (boot mean f[0]=-5.7297e+00  main f[0]=-7.9838e+00)
+
+  ln Z_2(beta_target) = -5.72623819e+00  (anchor=0.00000000e+00  f[0]=-7.98381788e+00)
+
+  Full beta-ladder (f[j] = ln Z_2(beta_target) - ln Z_2(beta_j)):
+    beta=0.00000  f=-7.9838e+00  ln_Z=2.2576e+00
+    beta=0.03125  f=-7.4607e+00  ln_Z=1.7344e+00
+    beta=0.06250  f=-6.9443e+00  ln_Z=1.2181e+00
+    beta=0.09375  f=-6.4351e+00  ln_Z=7.0882e-01
+    beta=0.12500  f=-5.9334e+00  ln_Z=2.0714e-01
+    beta=0.15625  f=-5.4398e+00  ln_Z=-2.8644e-01
+    beta=0.18750  f=-4.9549e+00  ln_Z=-7.7130e-01
+    beta=0.21875  f=-4.4796e+00  ln_Z=-1.2466e+00
+    beta=0.25000  f=-4.0150e+00  ln_Z=-1.7112e+00
+    beta=0.28125  f=-3.5625e+00  ln_Z=-2.1637e+00
+    beta=0.31250  f=-3.1243e+00  ln_Z=-2.6019e+00
+    beta=0.34375  f=-2.7034e+00  ln_Z=-3.0228e+00
+    beta=0.37500  f=-2.3044e+00  ln_Z=-3.4218e+00
+    beta=0.40625  f=-1.9343e+00  ln_Z=-3.7920e+00
+    beta=0.43750  f=-1.6037e+00  ln_Z=-4.1225e+00
+    beta=0.46875  f=-1.3284e+00  ln_Z=-4.3978e+00
+    beta=0.50000  f=-1.1288e+00  ln_Z=-4.5974e+00
+    beta=0.53125  f=-6.6561e-01  ln_Z=-5.0606e+00
+    beta=0.56250  f=-2.1874e-01  ln_Z=-5.5075e+00
+    beta=0.59375  f=2.0670e-01  ln_Z=-5.9329e+00
+    beta=0.62500  f=6.0306e-01  ln_Z=-6.3293e+00
+    beta=0.65625  f=9.5901e-01  ln_Z=-6.6852e+00
+    beta=0.68750  f=1.2589e+00  ln_Z=-6.9851e+00
+    beta=0.71875  f=1.4835e+00  ln_Z=-7.2097e+00
+    beta=0.75000  f=1.6148e+00  ln_Z=-7.3411e+00
+    beta=0.78125  f=1.6430e+00  ln_Z=-7.3692e+00
+    beta=0.81250  f=1.5716e+00  ln_Z=-7.2979e+00
+    beta=0.84375  f=1.4163e+00  ln_Z=-7.1425e+00
+    beta=0.87500  f=1.1973e+00  ln_Z=-6.9235e+00
+    beta=0.90625  f=9.3344e-01  ln_Z=-6.6597e+00
+    beta=0.93750  f=6.3943e-01  ln_Z=-6.3657e+00
+    beta=0.96875  f=3.2580e-01  ln_Z=-6.0520e+00
+    beta=1.00000  f=0.0000e+00  ln_Z=-5.7262e+00
+
+  RESULT  beta=1.6000e+01  lnF=-5.7262381925e+00  stderr=1.4244354524e-01  F=3.2593151170e-03
+real 1571.25
+user 1555.71
+sys 3.17

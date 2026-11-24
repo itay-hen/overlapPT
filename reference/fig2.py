@@ -1,0 +1,22 @@
+import matplotlib; matplotlib.use('Agg')
+import matplotlib.pyplot as plt, numpy as np
+plt.rcParams.update({'font.size':8,'font.family':'serif'})
+Lx=np.array([4,6,8,10,12,14,16,18,20])
+v =np.array([0.1155,0.7666,0.1952,0.8123,0.2602,0.8388,0.3214,0.8537,0.3816])
+ev=(Lx//2)%2==0
+lc=np.array([1,2,3,4]); vc=np.array([0.1155,0.2918,0.5416,0.7159])
+fig,axs=plt.subplots(1,2,figsize=(6.6,2.5))
+axs[0].plot(Lx[ev],v[ev],'o-',ms=4,color='#2b6cb0',label=r'$L_x/2$ even')
+axs[0].plot(Lx[~ev],v[~ev],'s-',ms=4,color='#b03a2e',label=r'$L_x/2$ odd')
+axs[0].set_xlabel(r'bulk length $L_x$'); axs[0].set_ylabel(r'$-\ln|\langle g_1|g_2\rangle|^2$')
+axs[0].set_ylim(0,1.0); axs[0].legend(frameon=False,fontsize=7,loc='center right')
+axs[0].set_title(r'(a) fixed cut, $\ell_{\rm cut}=1$',fontsize=8)
+c=np.polyfit(lc,vc,1)
+axs[1].plot(lc,vc,'o',ms=5,color='#1e8449')
+axs[1].plot([0.6,4.4],np.polyval(c,[0.6,4.4]),'--',c='gray',lw=1,
+            label=f'slope ${c[0]:.2f}$/bond')
+axs[1].set_xlabel(r'cut length $\ell_{\rm cut}$ (bonds removed)')
+axs[1].set_ylabel(r'$-\ln|\langle g_1|g_2\rangle|^2$')
+axs[1].set_xticks([1,2,3,4]); axs[1].legend(frameon=False,fontsize=7,loc='upper left')
+axs[1].set_title(r'(b) fixed bulk, $L_x=4$',fontsize=8)
+fig.tight_layout(pad=.3); fig.savefig('ed_scaling.pdf'); print("slope",c)
