@@ -33,3 +33,5 @@ else
     g++ "${FLAGS[@]}" -DSERIAL_MPI -I "$SRC/serial" -o "$BUILD/overlap.bin" "$BUILD/mbarpt_mpi.cpp"
 fi
 echo "built $BUILD/overlap.bin  (run from a separate directory per pair: overlap.bin 11 | 12 | 22)"
+
+python3 "$SRC/tools/record_build.py" "$BUILD" "${FLAGS[@]}"

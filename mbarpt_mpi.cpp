@@ -1734,6 +1734,9 @@ static double run_mbar_pt_pipeline_mpi(int alpha_val,
 // main  — MPI orchestration (mirrors mbarpt.cpp main, with MPI init/finalize)
 // ─────────────────────────────────────────────────────────────────────────────
 int main(int argc, char** argv) {
+    std::cerr << "BUILD segment_exchange_max_attempts=" << SEGMENT_EXCHANGE_MAX_ATTEMPTS
+              << " compiled=" << __DATE__ << " " << __TIME__ << std::endl;
+
     MPI_Init(&argc, &argv);
 
     // Set global mpi_rank/mpi_size (declared in mainQMC.hpp, used by init_rng)

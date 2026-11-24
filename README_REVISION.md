@@ -1,0 +1,1 @@
+This is a new source snapshot for the 24 November 2026 manuscript revision. Original project sources were not replaced. Segment exchange defaults to one unconditional draw. Builds record flags and hashes; tests/run_small_checks.sh reruns the finite-system checks.

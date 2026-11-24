@@ -250,12 +250,15 @@
 // addendum, Test J).  Both knobs are overridable with -D at compile time:
 //   -DENABLE_SEGMENT_EXCHANGE=0          -> move disabled (loop exchange stays on)
 //   -DSEGMENT_EXCHANGE_MAX_ATTEMPTS=1    -> single draw, no retry (detailed-balanced)
-// Defaults reproduce the production behaviour exactly.
+// Safe default: one unconditional draw. Retrying needs a proposal-probability correction.
 #ifndef ENABLE_SEGMENT_EXCHANGE
 #define ENABLE_SEGMENT_EXCHANGE      ENABLE_LOOP_EXCHANGE_UPDATES
 #endif
 #ifndef SEGMENT_EXCHANGE_MAX_ATTEMPTS
-#define SEGMENT_EXCHANGE_MAX_ATTEMPTS 64
+#define SEGMENT_EXCHANGE_MAX_ATTEMPTS 1
+#endif
+#if ENABLE_SEGMENT_EXCHANGE && SEGMENT_EXCHANGE_MAX_ATTEMPTS != 1
+#error "Segment exchange requires one unconditional draw; retries need a Hastings correction."
 #endif
 // [DIAG moves] Per-move disable flags for single_rung_check.cpp experiments
 // (-DDISABLE_MOVE_SWAP=1 etc.).  A disabled sub-move becomes a no-op at its own
