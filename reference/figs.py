@@ -27,7 +27,7 @@ for ax,st,t in zip(axs,stages,lab):
     grid(ax,8,cuts=st); ax.set_title(t,fontsize=8,pad=2)
 fig.tight_layout(pad=.2); fig.savefig('severed3.pdf'); plt.close(fig)
 
-# --- Fig: ED benchmark, boundary vs area scaling ---
+# --- Legacy ED panel (superseded): the manuscript's ed_scaling.pdf is written by fig2.py ---
 Lx=[4,6,8,10,12,14,16]
 d1=[0.1155,0.8252,0.1952,0.3769,0.2602,0.4979,0.3214]
 d2=[0.2918,0.3900,0.4654]; d3=[0.5416,0.0803]
@@ -45,5 +45,5 @@ axs[1].plot([0.5,3.5],np.polyval(c,[0.5,3.5]),'--',c='gray',lw=1)
 axs[1].set_xlabel(r'cut length $\ell_{\rm cut}$ (bonds removed)')
 axs[1].set_ylabel(r'$\overline{-\ln|\langle g_1|g_2\rangle|^2}$')
 axs[1].set_xticks([1,2,3]); axs[1].set_title('grows with cut length',fontsize=8)
-fig.tight_layout(pad=.3); fig.savefig('ed_scaling.pdf'); plt.close(fig)
+fig.tight_layout(pad=.3); fig.savefig('ed_scaling_legacy.pdf'); plt.close(fig)
 print("ok")
