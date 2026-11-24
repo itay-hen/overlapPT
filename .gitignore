@@ -22,3 +22,5 @@ models/**
 !models/*/runs_*/
 !models/*/runs_*/*/
 !models/*/runs_*/*/log.txt
+!models/*/runs_*/*/*/
+!models/*/runs_*/*/*/log.txt
