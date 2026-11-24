@@ -1,0 +1,2 @@
+
+  [F10 note] qmax=800 >= 171 -- factorial[k] (mainQMC.hpp, plain double) is inf for k>=171, but verified benign: it's never indexed by q, only by small cycle-length/operator-support values independent of qmax. See mbar_common.hpp's check_numerics_bounds for the verification.

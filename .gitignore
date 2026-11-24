@@ -1,0 +1,20 @@
+*.bin
+*.o
+*.out
+z1_anchor.dat*
+qmc_data_*.dat
+slurm-*.out
+__pycache__/
+*.pyc
+.DS_Store
+# models/: keep inputs, exact references, reports and run logs; drop builds and raw sample streams
+models/**
+!models/*/
+!models/*/*.txt
+!models/*/*.json
+!models/*/qdist/
+!models/*/qdist/exact.json
+!models/*/qdist/report.txt
+!models/*/runs/
+!models/*/runs/*/
+!models/*/runs/*/log.txt

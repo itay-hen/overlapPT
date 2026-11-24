@@ -1,0 +1,780 @@
+--- a/replica.hpp
++++ b/replica.hpp
+@@ -1007,6 +1007,92 @@
+     // For α=2: two B-configurations. For α=3: three B-configurations.
+     // (Paper Eqs. 24–29: the number of "cuts" is α-1)
+     int alpha;
++
++    // [OVERLAP] Which Hamiltonian (0 = H1, 1 = H2 in the OV_* tables) copy r
++    // uses. Copy 0 holds segment [0,c) of the sequence -- the operator that acts
++    // FIRST -- and copy 1 holds [c,q). Set from g_ov_ham[] in the constructor.
++    std::vector<int> ham_of_copy;
++
++#ifdef OVERLAP_PLUS
++    // ═════════════════════════════════════════════════════════════════════
++    // [OVERLAP_PLUS] |+> trial state, open walks, fixed projection beta
++    // (= the Beta macro), ladder over the interpolation path of
++    // gsOverlap v18 Sec. III.F:  (0,0) -> (0,1) -> (1,1).
++    //
++    // Here "beta" (this->beta, the rung coordinate everywhere in the driver)
++    // is s in [0,1]; rung s means the pair (lam_a, lam_b) of OvLambdas().
++    // The weight is Eq. (W) with H(lam) = (1-lam) H1 + lam H2 in PMR form
++    // (energies and hopping amplitudes interpolate linearly), segment
++    // [0,c) at lam_b (acts first), segment [c,q) at lam_a, each with
++    // projection tau = Beta/2, summed over the cut c, for an OPEN walk
++    // starting at y0 = lattice[0] (sampled). The |+> endpoint factor
++    // phi(y_q) phi(y0) = 1/dim is common to every rung and dropped.
++    // ═════════════════════════════════════════════════════════════════════
++    std::vector<double> ovE[2], ovD[2];   // energies at positions 0..q, d at ops 0..q-1, for H1/H2
++    bool ov_valid = false;
++    std::vector<ExExFloat> ov_bpf, ov_w0;  // (-tau)^k/k!, prefix weights
++    int ov_bpf_len = 0;
++
++    static void OvLambdas(double s_val, double& lam_a, double& lam_b) {
++        if (s_val <= 0.5) { lam_a = 0.0; lam_b = 2.0 * s_val; }
++        else              { lam_a = 2.0 * s_val - 1.0; lam_b = 1.0; }
++    }
++    static double OvEnergyH(int h, const std::bitset<N>& cfg) {
++        double e = 0.0;
++        for (int k = 0; k < OV_D0_size[h]; k++)
++            e -= (2 * (int)((OV_D0_product[h][k] & (~cfg)).count() % 2) - 1) * OV_D0_coeff[h][k];  // int: count() is unsigned
++        return e;
++    }
++    static double OvDH(int h, int op, const std::bitset<N>& cfg) {
++        double d = 0.0;
++        for (int k = 0; k < OV_D_size[h][op]; k++)
++            d -= (2 * (int)((OV_D_product[h][op][k] & (~cfg)).count() % 2) - 1) * OV_D_coeff[h][op][k];
++        return d;
++    }
++    void OvPrecompute() {
++        for (int h = 0; h < 2; h++) { ovE[h].resize(q + 1); ovD[h].resize(q > 0 ? q : 1); }
++        std::bitset<N> cfg = lattice[0];
++        for (int h = 0; h < 2; h++) ovE[h][0] = OvEnergyH(h, cfg);
++        for (int i = 0; i < q; i++) {
++            cfg ^= P_matrix[Sq[i]];   // d evaluated at the post-hop state (calc_d_for_config convention)
++            for (int h = 0; h < 2; h++) {
++                ovD[h][i] = OvDH(h, Sq[i], cfg);
++                ovE[h][i + 1] = OvEnergyH(h, cfg);
++            }
++        }
++        ov_valid = true;
++    }
++    ExExFloat OvWeight(double s_val) {
++        if (!ov_valid) OvPrecompute();
++        double la, lb; OvLambdas(s_val, la, lb);
++        const double tau = 0.5 * (double)(Beta);
++        if ((int)ov_bpf.size() < qmax + 1) { ov_bpf.resize(qmax + 1); ov_w0.resize(qmax + 1); ov_bpf_len = 0; }
++        if (ov_bpf_len == 0) { ov_bpf[0] = ExExFloat(1.0); ov_bpf_len = 1; }
++        while (ov_bpf_len <= q) { ov_bpf[ov_bpf_len] = ov_bpf[ov_bpf_len - 1] * ((-tau) / ov_bpf_len); ov_bpf_len++; }
++        auto Eat = [&](double lam, int i) { return (1.0 - lam) * ovE[0][i] + lam * ovE[1][i]; };
++        auto Dat = [&](double lam, int i) { return (1.0 - lam) * ovD[0][i] + lam * ovD[1][i]; };
++        // Pass A: prefix segment [0,c) at lam_b, including its hopping product.
++        divdiff& d0 = divdiff_replicas[0];
++        d0.CurrentLength = 0;
++        ExExFloat P(1.0);
++        for (int c = 0; c <= q; c++) {
++            if (c > 0) P *= Dat(lb, c - 1);
++            d0.AddElement(-tau * Eat(lb, c));
++            ov_w0[c] = d0.divdiffs[c] * ov_bpf[c] * P;
++        }
++        // Pass B: suffix segment [c,q) at lam_a, built right to left (divided
++        // differences are symmetric in their nodes).
++        divdiff& d1 = divdiff_replicas[1];
++        d1.CurrentLength = 0;
++        ExExFloat S(1.0), total(0.0);
++        for (int c = q; c >= 0; c--) {
++            if (c < q) S *= Dat(la, c);
++            d1.AddElement(-tau * Eat(la, c));
++            total += ov_w0[c] * (d1.divdiffs[q - c] * ov_bpf[q - c]) * S;
++        }
++        return total;
++    }
++#endif
+ 
+     // Bitmasks indicating which qubit indices belong to subsystem A or B.
+     // A '1' bit at position i means qubit i is in that subsystem.
+@@ -1111,7 +1197,7 @@
+     unsigned long long m_step;    // Total measurements taken
+ 
+     // [DIAG swap-fallback] How often PartialUpdateAfterSwap's cheap O(alpha)
+-    // incremental path gets bypassed for the expensive O(alpha*q) rebuild
++    // incremental path is skipped in favour of the expensive O(alpha*q) rebuild
+     // (window_zero_count_changed branch, added by the D_zero_prefix-drift
+     // fix). Not reset across thermalization/sampling -- callers diff two
+     // snapshots to get a per-block rate. See scan_swap_fallback_stats() in
+@@ -1159,6 +1245,10 @@
+           min_index(0),
+           max_index(0) {
+         
++        ham_of_copy.assign(alpha, 0);
++#ifdef OVERLAP_MODE
++        for(int r = 0; r < alpha; r++) ham_of_copy[r] = g_ov_ham[r < 2 ? r : 1];
++#endif
+         subsystem_A_mask = std::bitset<N>(SUBSYSTEM_A_MASK);
+         subsystem_B_mask = std::bitset<N>(SUBSYSTEM_B_MASK);
+         
+@@ -1283,7 +1373,7 @@
+         //                    so that re-running the same binary produces genuinely
+         //                    different trajectories rather than identical ones.
+         local_rng.seed(static_cast<unsigned>(std::hash<double>{}(beta_value))
+-                       ^ static_cast<unsigned>(replica_index) * 0x9E3779B9u
++                       ^ static_cast<unsigned>(replica_index) * 2654435769u   // 2^32/golden ratio (standard hash multiplier)
+                        ^ rng_seed);
+ 
+         // ── CRITICAL: zA is SHARED across all α replicas  (Paper Eq. 24) ────
+@@ -1428,6 +1518,9 @@
+     // it is only ever called with a frozen configuration — see [OPT 1] above.
+     //=========================================================================
+     void InvalidateCache() {
++#ifdef OVERLAP_PLUS
++        ov_valid = false;
++#endif
+         energies_valid = false;
+         prefix_cache_valid = false;
+         a_closure_valid = false;  // [OPT 7] Sq may have changed — rebuild on next check
+@@ -1607,6 +1700,9 @@
+     //   the caches valid — see [OPT 1] comment for the invariant argument).
+     //=========================================================================
+     void PartialUpdateAfterSwap(int m) {
++#ifdef OVERLAP_PLUS
++        ov_valid = false;
++#endif
+         // [OPT 4] Guard: partial update requires ALL cache entries to be valid,
+         // since it only writes to positions m and m+1 and leaves everything else
+         // untouched.  After lazy energy evaluation (GetRenyiWeight returned 0
+@@ -1697,14 +1793,14 @@
+                 cfg ^= P_matrix[Sq[m]];
+ 
+                 // ── Update the three entries that depend on state_{m+1} ───────
+-                D_replicas[r][m]          = calc_d_for_config(Sq[m], cfg);
+-                Energies_replicas[r][m+1] = CalcCompositeEnergy(cfg);  // [OPT-14]
++                D_replicas[r][m]          = calc_d_for_config(r, Sq[m], cfg);
++                Energies_replicas[r][m+1] = CalcCompositeEnergy(r, cfg);  // [OPT-14]
+                 B_prefix_cache[r][m+1]    = cfg & subsystem_B_mask;
+ 
+                 // Apply new Sq[m+1] (= old Sq[m]) → state_{m+2} (identical to before).
+                 // Sq[m+1] changed even though state_{m+2} didn't, so D[m+1] must update.
+                 cfg ^= P_matrix[Sq[m+1]];
+-                D_replicas[r][m+1] = calc_d_for_config(Sq[m+1], cfg);
++                D_replicas[r][m+1] = calc_d_for_config(r, Sq[m+1], cfg);
+ 
+                 bool new_zero_m  = (D_replicas[r][m]   == zero_c);
+                 bool new_zero_m1 = (D_replicas[r][m+1] == zero_c);
+@@ -2042,15 +2138,15 @@
+             std::bitset<N> current_config = lattice[r];
+ 
+             // Energy at position 0 (before any operators)
+-            Energies_replicas[r][0] = CalcCompositeEnergy(current_config);  // [OPT-14]
++            Energies_replicas[r][0] = CalcCompositeEnergy(r, current_config);  // [OPT-14]
+ 
+             for(int i = 0; i < q; i++) {
+                 // Apply operator Sq[i]: this flips certain spins (XOR with P_matrix)
+                 current_config ^= P_matrix[Sq[i]];
+                 // D-coefficient = diagonal matrix element of Sq[i] at the POST-op state
+-                D_replicas[r][i] = calc_d_for_config(Sq[i], current_config);
++                D_replicas[r][i] = calc_d_for_config(r, Sq[i], current_config);
+                 // Energy at position i+1 (after applying Sq[0]...Sq[i])
+-                Energies_replicas[r][i + 1] = CalcCompositeEnergy(current_config);  // [OPT-14]
++                Energies_replicas[r][i + 1] = CalcCompositeEnergy(r, current_config);  // [OPT-14]
+             }
+         }
+         energies_valid = true;
+@@ -2146,13 +2242,25 @@
+     // AND ops plus one OR, every call, inside the O(alpha*q) energy-rebuild
+     // loop, for nothing (A_mask/B_mask are complementary and exhaustive over
+     // the N qubits, so (cfg&A)|(cfg&B) == cfg always).
+-    double CalcCompositeEnergy(const std::bitset<N>& full_config) {
++    // [OVERLAP] Copy r's diagonal energy. In OVERLAP_MODE each copy r carries
++    // its own Hamiltonian (ham_of_copy[r] indexes the OV_* tables generated by
++    // tools/make_tables.py); otherwise the single compiled Hamiltonian is used.
++    double CalcCompositeEnergy(int r, const std::bitset<N>& full_config) {
+         double energy = 0.0;
++#ifdef OVERLAP_MODE
++        const int h = ham_of_copy[r];
++        for(int k = 0; k < OV_D0_size[h]; k++) {
++            int sign = 2 * ((OV_D0_product[h][k] & (~full_config)).count() % 2) - 1;
++            energy -= sign * OV_D0_coeff[h][k];
++        }
++#else
++        (void)r;
+         // Sum over terms in D_0: each term is ±coeff depending on spin pattern
+         for(int k = 0; k < D0_size; k++) {
+             int sign = 2 * ((D0_product[k] & (~full_config)).count() % 2) - 1;
+             energy -= sign * D0_coeff[k];
+         }
++#endif
+         return energy;
+     }
+ 
+@@ -2160,12 +2268,21 @@
+     // D_k is the diagonal matrix associated with the k-th permutation operator P_k.
+     // In the PMR weight formula (Paper Eq. 16), each operator in the sequence
+     // contributes one factor of d_k (the D in the D·P decomposition of Eq. 15).
+-    std::complex<double> calc_d_for_config(int op_idx, const std::bitset<N>& config) {
++    std::complex<double> calc_d_for_config(int r, int op_idx, const std::bitset<N>& config) {
+         std::complex<double> d(0.0, 0.0);
++#ifdef OVERLAP_MODE
++        const int h = ham_of_copy[r];
++        for(int k = 0; k < OV_D_size[h][op_idx]; k++) {
++            int sign = 2 * ((OV_D_product[h][op_idx][k] & (~config)).count() % 2) - 1;
++            d -= sign * OV_D_coeff[h][op_idx][k];
++        }
++#else
++        (void)r;
+         for(int k = 0; k < D_size[op_idx]; k++) {
+             int sign = 2 * ((D_product[op_idx][k] & (~config)).count() % 2) - 1;
+             d -= sign * D_coeff[op_idx][k];
+         }
++#endif
+         return d;
+     }
+     
+@@ -2203,9 +2320,14 @@
+     // single-beta MC path (UpdateWeight) hits both calls every time (no
+     // regression -- same total work as before, just reorganized into two
+     // named phases); the K-beta driver sweep calls EnumerateTuples() ONCE
+-    // per sample and EvaluateEnumeratedAt() K times directly (bypassing this
++    // per sample and EvaluateEnumeratedAt() K times directly (instead of calling this
+     // function), which is where the win comes from -- see EnumerateTuples().
+     ExExFloat GetRenyiWeight(double target_beta, const ExExFloat* beta_factorials) {
++#ifdef OVERLAP_PLUS
++        (void)beta_factorials;
++        tuples_valid = true; tuples_nonzero = true;
++        return OvWeight(target_beta);
++#endif
+         if (!tuples_valid) EnumerateTuples();
+         return EvaluateEnumeratedAt(target_beta, beta_factorials);
+     }
+@@ -2235,6 +2357,11 @@
+     // both beta-independent facts).
+     //=========================================================================
+     int EnumerateTuples() {
++#ifdef OVERLAP_PLUS
++        if (!ov_valid) OvPrecompute();
++        tuples_valid = true; tuples_nonzero = true;
++        return 1;
++#endif
+         if(!CheckSubsystemAClosure()) {
+             tuples_valid = true;
+             tuples_nonzero = false;
+@@ -2272,6 +2399,10 @@
+     // EvaluateWeightAt() -- violating this gives stale/wrong results).
+     //=========================================================================
+     ExExFloat EvaluateEnumeratedAt(double target_beta, const ExExFloat* beta_factorials) {
++#ifdef OVERLAP_PLUS
++        (void)beta_factorials;
++        return OvWeight(target_beta);
++#endif
+         if(!tuples_nonzero) {
+             return ExExFloat(0.0);
+         }
+@@ -2751,7 +2882,7 @@
+     //=========================================================================
+     ExExFloat UpdateWeight() {
+         // [OPT B] If beta was restored directly after a PT swap rejection
+-        // (bypassing set_beta()), beta_pow_factorial is stale for the old beta.
++        // (without calling set_beta()), beta_pow_factorial is stale for the old beta.
+         // Rebuild from scratch before the lazy-extension step below uses it.
+         if(beta_dirty) {
+             ExExFloat curr(1.0);
+@@ -3196,7 +3327,8 @@
+                 // block-permutation moves, unaffected).
+                 const int active_moves = 4 + (ENABLE_INNER_LOOP_REVERSAL ? 1 : 0)
+                                             + (ENABLE_LOOP_EXCHANGE_UPDATES ? 1 : 0)
+-                                            + (ENABLE_SEGMENT_EXCHANGE ? 1 : 0);   // [DIAG segex]
++                                            + (ENABLE_SEGMENT_EXCHANGE ? 1 : 0)    // [DIAG segex]
++                                            + (OV_SINGLE_MOVES ? 2 : 0);           // [OVERLAP_PLUS] single insert/remove
+                 const double inv_moves = 1.0 / double(active_moves);
+                 const double t_swap = inv_moves;
+                 const double t_del = t_swap + inv_moves;
+@@ -3205,6 +3337,8 @@
+                 const double t_inner = t_cycle + (ENABLE_INNER_LOOP_REVERSAL ? inv_moves : 0.0);
+                 const double t_exchange = t_inner + (ENABLE_LOOP_EXCHANGE_UPDATES ? inv_moves : 0.0);
+                 const double t_segment = t_exchange + (ENABLE_SEGMENT_EXCHANGE ? inv_moves : 0.0);   // [DIAG segex]
++                const double t_sins = t_segment + (OV_SINGLE_MOVES ? inv_moves : 0.0);
++                const double t_srem = t_sins + (OV_SINGLE_MOVES ? inv_moves : 0.0);
+ 
+                 // ── Sub-move 1: ADJACENT SWAP (25%) ─────────────────────────
+                 // Swaps the order of two neighboring operators Sq[m] ↔ Sq[m+1].
+@@ -3364,7 +3498,36 @@
+                         if(newWeight.get_mantissa() == 0.0) cont = 1;
+                     }
+ #endif
++                }
++                // [OVERLAP_PLUS] Single-operator insertion/removal. Open walks need
++                // them: pair moves and cycle substitutions never change P_Gamma, so
++                // without these the endpoint y_q could never move away from y0.
++                // Insertion: generator uniform over Nop, gap uniform over q+1;
++                // removal: position uniform over q. Equal selection probabilities give
++                // T(rem)/T(ins) = Nop for insertion (Rfactor *= Nop), 1/Nop for removal.
++                else if(v < t_sins) {
++                    if(q + 1 < qmax) {
++                        m = int(local_val(local_rng) * (q + 1));
++                        p = local_diceNop(local_rng);
++                        for(i = q - 1; i >= m; i--) Sq[i + 1] = Sq[i];
++                        Sq[m] = p; q += 1;
++                        Rfactor *= Nop;
++                        InvalidateCache();
++                        newWeight = UpdateWeight();
++                        if(newWeight.get_mantissa() == 0.0) cont = 1;
++                    } else qmax_achieved = 1;
+                 }
++                else if(v < t_srem) {
++                    if(q >= 1) {
++                        m = int(local_val(local_rng) * q);
++                        for(i = m; i < q - 1; i++) Sq[i] = Sq[i + 1];
++                        q -= 1;
++                        Rfactor /= Nop;
++                        InvalidateCache();
++                        newWeight = UpdateWeight();
++                        if(newWeight.get_mantissa() == 0.0) cont = 1;
++                    }
++                }
+             // Keep chaining sub-moves with probability COMPOSITE_UPDATE_BREAK_PROBABILITY
+             } while(cont && local_val(local_rng) > COMPOSITE_UPDATE_BREAK_PROBABILITY);
+ 
+@@ -3404,7 +3567,10 @@
+         // in the sequence, enabling exploration of configurations that pure
+         // insert/delete/swap moves might take a very long time to reach.
+         // ════════════════════════════════════════════════════════════════════
+-        else if(v < 0.9 && q >= 2 && !DISABLE_MOVE_BLOCK) {   // [DIAG moves]
++        // [OVERLAP_PLUS] The cyclic rotation below is only valid for CLOSED walks
++        // (rotating an open walk and shifting y0 is not an involution), so it is
++        // switched off for the open |+> ensemble; that 10% goes to spin flips.
++        else if(v < 0.9 && q >= 2 && !DISABLE_MOVE_BLOCK && !OV_SINGLE_MOVES) {   // [DIAG moves]
+             m = (q == 2) ? 0 : int(local_val(local_rng) * (q - 1));
+ 
+             // [OPT 1] Save pre-move weight for potential rejection restoration.
+--- a/mainQMC.hpp
++++ b/mainQMC.hpp
+@@ -24,6 +24,12 @@
+ #include"divdiff.hpp"
+ #include"hamiltonian.hpp" // use a header file, which defines the Hamiltonian and the custom observables
+ #include"parameters.hpp"  // parameters of the simulation such as the number of Monte-Carlo updates
++#ifdef OVERLAP_MODE
++#include"hamiltonian2.hpp" // [OVERLAP] H1 and H2 tables on the shared P_matrix (tools/make_tables.py)
++// [OVERLAP] Hamiltonian index (0 = H1, 1 = H2) of copy 0 (acts first, segment [0,c))
++// and copy 1 (segment [c,q)). Set by the driver before any RenyiReplica is built.
++int g_ov_ham[2] = {0, 1};
++#endif
+ 
+ #define measurements (steps/stepsPerMeasurement)
+ 
+--- a/parameters.hpp
++++ b/parameters.hpp
+@@ -27,7 +27,9 @@
+ //   Beta = 5, MBAR_ALPHA = 2, MBAR_N_BETA = 64 (still 32 if that's now the
+ //   regular working config), MBAR_T_EQUIL = 1000000, MBAR_N_SAMPLES = 500000.
+ // ═══════════════════════════════════════════════════════════════════════════════
+-#define Beta   3                  // inverse temperature
++#ifndef Beta
++#define Beta   3                  // inverse temperature (in OVERLAP_MODE: tau, the projection time of EACH segment)
++#endif
+ 
+ //
+ // Below is the list of standard observables:
+@@ -65,8 +67,26 @@
+ // Paper: "Each system was partitioned into two contiguous subregions A and B"
+ //        (Section III.A)
+ // ─────────────────────────────────────────────────────────────────────────────
++#ifdef OVERLAP_PLUS
++#ifndef OVERLAP_MODE
++#define OVERLAP_MODE
++#endif
++#define OV_SINGLE_MOVES 1   // [OVERLAP_PLUS] open walks: single-operator insert/remove on, rotation off
++#else
++#define OV_SINGLE_MOVES 0
++#endif
++#ifdef OVERLAP_MODE
++// [OVERLAP] Ground-state overlap mode: no bipartition. Every qubit is in A
++// (shared by both copies) and B is empty, so the two copies always carry the
++// same state, the cut between the H_b segment and the H_a segment is
++// continuous, and closure means the whole sequence returns to z. The alpha=2
++// weight is then the cut-sum expansion of Tr[exp(-tau H_a) exp(-tau H_b)].
++#define SUBSYSTEM_A_MASK  std::string(N, '1')
++#define SUBSYSTEM_B_MASK  std::string(N, '0')
++#else
+ #define SUBSYSTEM_A_MASK  "000011011"
+ #define SUBSYSTEM_B_MASK "111100100"
++#endif
+ #define Nsubsystems 5
+ 
+ // ─────────────────────────────────────────────────────────────────────────────
+@@ -131,7 +151,9 @@
+ // truncation (mbar_common.hpp's scan_qmax/print_qmax_fatal_message), and a
+ // completed run tells you, from its own data, what qmax the NEXT run needs.
+ // ─────────────────────────────────────────────────────────────────────────
++#ifndef qmax
+ #define qmax     500
++#endif
+ 
+ // ─────────────────────────────────────────────────────────────────────────────
+ // Nbins — bins for statistical error estimation  [OPTIMIZATION — not in paper]
+@@ -211,7 +233,7 @@
+ #ifndef SEGMENT_EXCHANGE_MAX_ATTEMPTS
+ #define SEGMENT_EXCHANGE_MAX_ATTEMPTS 64
+ #endif
+-// [DIAG moves] Per-move kill switches for single_rung_check.cpp experiments
++// [DIAG moves] Per-move disable flags for single_rung_check.cpp experiments
+ // (-DDISABLE_MOVE_SWAP=1 etc.).  A disabled sub-move becomes a no-op at its own
+ // slot (the other sub-moves keep their selection probabilities, so each remaining
+ // move is still a valid Metropolis move on its own).  DISABLE_MOVE_CYCLE also
+@@ -282,9 +304,14 @@
+ // subsystem B that are simulated simultaneously. For α=2 there are 2 B-copies,
+ // for α=3 there are 3 B-copies (Paper Eqs. 24-29).
+ // ─────────────────────────────────────────────────────────────────────────────
++#ifdef OVERLAP_MODE
++#define MBAR_ALPHA           2   // [OVERLAP] always two segments (H_b then H_a)
++#endif
++#ifndef MBAR_ALPHA
+ #define MBAR_ALPHA           3   // [VALIDATION RUN] alpha=3 exercises F1 (the headline
+                                   // negative-S3 bug) directly; also recompile with
+                                   // MBAR_ALPHA=2 afterward as a regression check.
++#endif
+ 
+ // ─────────────────────────────────────────────────────────────────────────────
+ // MBAR_N_BETA — number of points on the inverse-temperature ladder
+@@ -300,7 +327,9 @@
+ // 32 rungs is the value used in the paper's benchmark simulations
+ // (Section III.A: "Nβ = 32 inverse-temperature values").
+ // ─────────────────────────────────────────────────────────────────────────────
++#ifndef MBAR_N_BETA
+ #define MBAR_N_BETA          32  // [regular working value for MPI runs -- not reduced for the smoke test]
++#endif
+ 
+ // ─────────────────────────────────────────────────────────────────────────────
+ // MBAR_BETA_TARGET — the inverse temperature β we actually want  (Paper Eq. 1)
+@@ -329,7 +358,9 @@
+ // (not specified in the paper) that ensures negligible quantum corrections
+ // while keeping the 100× ladder range constant as Beta changes.
+ // ─────────────────────────────────────────────────────────────────────────────
++#ifndef MBAR_BETA_MIN
+ #define MBAR_BETA_MIN        (Beta / 100.0)
++#endif
+                                              // auto-adjusts with Beta: always 1% of target
+                                              // keeps quantum corrections O((Beta/100)^2) negligible
+                                              // and maintains a consistent 100x ladder range
+@@ -344,7 +375,9 @@
+ // The paper states: "For each α, a full parallel-tempering simulation was
+ // performed" (Section III.A). Thermalization is an implicit prerequisite.
+ // ─────────────────────────────────────────────────────────────────────────────
++#ifndef MBAR_T_EQUIL
+ #define MBAR_T_EQUIL         100000   // [VALIDATION RUN] 10x smaller than production (1000000)
++#endif
+ 
+ // ─────────────────────────────────────────────────────────────────────────────
+ // MBAR_N_SAMPLES — number of configurations saved per ladder rung  (Paper Eq. 10)
+@@ -357,7 +390,9 @@
+ // total. The paper's stated ~10^6 reflects the effective independent sample
+ // count after autocorrelation.
+ // ─────────────────────────────────────────────────────────────────────────────
++#ifndef MBAR_N_SAMPLES
+ #define MBAR_N_SAMPLES       200000   // [2026-09-13] 10x the 20000 validation value, per Prof. Hen's
++#endif
+                                       // "10x as many steps for .1 - 1" note -- more RECORDED samples is
+                                       // what raises N_eff (MBAR_STEPS_PER_SAMP only changes spacing, which
+                                       // OPT-5's adaptive stride already tunes). Production was 500000.
+@@ -378,7 +413,9 @@
+ // tools/ustream_recheck.py. Disk: N_SAMPLES * N_BETA * 8 bytes per rank per alpha
+ // chain (~51 MB/rank, ~1.6 GB per chain at 200000 x 32). An alpha>=2 job that
+ // solves Z1 fresh keeps both its alpha=1 and alpha chains. Set 0 to delete as before.
++#ifndef MBAR_KEEP_SAMPLES
+ #define MBAR_KEEP_SAMPLES    1
++#endif
+ 
+ // ─────────────────────────────────────────────────────────────────────────────
+ // MBAR_SWAP_INTERVAL — attempt a parallel tempering swap every N steps
+@@ -429,7 +466,9 @@
+ // the overhead manageable (each replicate is a warm-started MBAR solve on the
+ // already-collected data — no new MC sampling is needed).
+ // ─────────────────────────────────────────────────────────────────────────────
++#ifndef MBAR_N_BOOT
+ #define MBAR_N_BOOT          200
++#endif
+ 
+ // ─────────────────────────────────────────────────────────────────────────────
+ // MBAR_LN_Z1_TARGET — SUPERSEDED; no longer read by mbarpt.cpp
+--- a/mbarpt_mpi.cpp
++++ b/mbarpt_mpi.cpp
+@@ -35,7 +35,11 @@
+ //   P must evenly divide MBAR_N_BETA (e.g., P=1,2,4,8,16,32 for N_BETA=32).
+ // ═══════════════════════════════════════════════════════════════════════════════
+ 
++#ifdef SERIAL_MPI           // single-process build without an MPI installation (serial/serial_mpi.h)
++#include "serial_mpi.h"
++#else
+ #include <mpi.h>       // must come first so MPI_VERSION is defined before mainQMC.hpp/replica.hpp
++#endif
+ #include "mainQMC.hpp"
+ 
+ #include <vector>
+@@ -361,13 +365,35 @@
+ //   choice[p][i] = the split point achieving that minimum, for reconstruction
+ // O(K^2 * P); at realistic K,P (tens to low hundreds) this is microseconds,
+ // negligible next to anything else in a pipeline that runs for hours.
++// ─────────────────────────────────────────────────────────────────────────────
++// ─────────────────────────────────────────────────────────────────────────────
++// pipeline_stat  — the scalar a pipeline run reports (point estimate and every
++// bootstrap replicate). In this code's MBAR gauge f[j] = ln Z(rung K-1) - ln Z(rung j).
++//   default:        f[0]  (= ln Z(beta_target) - ln Z(beta_min); the anchor is added)
++//   OVERLAP_PLUS:   ln F_beta = 2 ln O(0,1) - ln O(0,0) - ln O(1,1)
++//                             = f[0] + f[K-1] - 2 f[(K-1)/2],
++//                   which is gauge invariant (needs odd K, mid rung = pair (0,1)).
+ // ─────────────────────────────────────────────────────────────────────────────
++static double pipeline_stat(const std::vector<double>& f) {
++#ifdef OVERLAP_PLUS
++    int K = (int)f.size();
++    return f[0] + f[K - 1] - 2.0 * f[(K - 1) / 2];
++#else
++    return f[0];
++#endif
++}
++
+ static void partition_rungs_by_cost(const std::vector<double>& beta_ladder, int P,
+                                      std::vector<int>& rung_block_start,
+                                      std::vector<int>& rung_block_len) {
+     int K = (int)beta_ladder.size();
+     std::vector<double> prefix(K + 1, 0.0);
++#ifdef OVERLAP_PLUS
++    // [OVERLAP_PLUS] rungs are interpolation points at fixed beta: equal cost
++    for (int i = 0; i < K; i++) prefix[i + 1] = prefix[i] + 1.0;
++#else
+     for (int i = 0; i < K; i++) prefix[i + 1] = prefix[i] + beta_ladder[i];
++#endif
+     auto block_cost = [&](int a, int b) { return prefix[b] - prefix[a]; };
+ 
+     const double INF = 1e300;
+@@ -662,7 +688,7 @@
+                 MPI_Allreduce(&local_ckpt, &global_ckpt, 1, MPI_INT, MPI_LOR, MPI_COMM_WORLD);
+                 if (global_ckpt) {
+                     // [OPT-5] stride_factor is always 1 here (only meaningful
+-                    // during sampling); passed through for a uniform payload.
++                    // during sampling); passed through so every message has the same layout.
+                     write_checkpoint(alpha_val, mpi_rank, CheckpointPhase::THERMALIZING,
+                                       step + 1, stride_factor, local_replicas);
+                     if (mpi_rank == 0)
+@@ -1448,7 +1474,9 @@
+     // once and seed every rank's boot_rng from that shared value instead.
+     unsigned int shared_boot_seed = rng_seed;
+     MPI_Bcast(&shared_boot_seed, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+-    std::mt19937 boot_rng(shared_boot_seed ^ 0xBEEFCAFEu);  // IDENTICAL on every rank
++    // Fixed salt so the bootstrap stream differs from the physics stream seeded by the same value.
++    const unsigned int kBootstrapSeedSalt = 3203386110u;
++    std::mt19937 boot_rng(shared_boot_seed ^ kBootstrapSeedSalt);  // IDENTICAL on every rank
+ 
+     std::vector<double> boot_f0(N_BOOT);
+     // [OPT-11] u_boot_local/f_b/starts hoisted above the loop and refilled
+@@ -1470,7 +1498,7 @@
+         f_b = f;  // warm start from converged main solution (assignment, not construction)
+         solve_mbar_mpi(u_boot_local, K, S_boot_local, Nk_boot, f_b, false);
+         // f_b[0] is the same on all ranks (solve_mbar_mpi uses Allreduce)
+-        boot_f0[b] = f_b[0];
++        boot_f0[b] = pipeline_stat(f_b);
+ 
+         if ((b + 1) % std::max(1, N_BOOT / 4) == 0 && mpi_rank == 0)
+             std::cout << "  bootstrap " << (b + 1) << "/" << N_BOOT << "\n";
+@@ -1492,7 +1520,7 @@
+     if (boot_stderr_out) *boot_stderr_out = boot_stderr;
+ 
+     // ── Compute absolute ln Z_alpha(beta_target) ─────────────────────────────
+-    double log_Z_alpha_target = log_Z_anchor + f[0];
++    double log_Z_alpha_target = log_Z_anchor + pipeline_stat(f);
+ 
+     if (mpi_rank == 0) {
+         std::cout << "\n  ln Z_" << alpha_val << "(beta_target) = "
+@@ -1567,6 +1595,121 @@
+     std::vector<double> beta_ladder = build_beta_ladder();
+     int K = N_BETA;
+ 
++#ifdef OVERLAP_MODE
++    // ═════════════════════════════════════════════════════════════════════════
++    // [OVERLAP] Ground-state overlap mode.
++    //
++    // Estimates ln Z_ab(tau) with Z_ab(tau) = Tr[exp(-tau H_a) exp(-tau H_b)]
++    // for one pair ab in {11, 12, 22} (first program argument, default 12).
++    // The ladder variable ("beta" everywhere else in this file) is tau, the
++    // projection time of EACH of the two segments. Combine three runs with
++    // tools/combine_overlap.py:
++    //     |<g1|g2>|^2 = lim_{tau->inf} Z_12(tau) / sqrt(Z_11(tau) Z_22(tau)),
++    // where Z_aa(tau) = Tr exp(-2 tau H_a).
++    //
++    // Anchor at tau_min (closed form, exact through O(tau^2); for traceless
++    // Hamiltonians without three-body Pauli closures the next term is O(tau^4)):
++    //   Z_ab/2^N = 1 - tau (t_a + t_b) + tau^2/2 (<H_a^2> + <H_b^2> + 2<H_a H_b>)
++    // with t = Tr(H)/2^N and <XY> = Tr(XY)/2^N from tools/make_tables.py.
++    // ═════════════════════════════════════════════════════════════════════════
++#ifdef OVERLAP_PLUS
++    // ═════════════════════════════════════════════════════════════════════════
++    // [OVERLAP_PLUS] |+> trial state, fixed beta = Beta, one PT/MBAR run over the
++    // interpolation ladder s_k = k/(K-1): s in [0,1/2] is the pair (0, 2s),
++    // s in [1/2,1] the pair (2s-1, 1), so rung 0 = O_11, mid rung = O_12,
++    // last rung = O_22. Output: ln F_beta (gauge invariant, no anchor).
++    // ═════════════════════════════════════════════════════════════════════════
++    {
++        if (K % 2 == 0 || K < 3) {
++            if (mpi_rank == 0) std::cerr << "FATAL: OVERLAP_PLUS needs an odd MBAR_N_BETA >= 3\n";
++            MPI_Finalize();
++            return 1;
++        }
++        if (N_B != 0 || N_A != N) {
++            if (mpi_rank == 0) std::cerr << "FATAL: OVERLAP_PLUS needs A = all qubits, B = empty\n";
++            MPI_Finalize();
++            return 1;
++        }
++        for (int k = 0; k < K; k++) beta_ladder[k] = (double)k / (K - 1);
++        if (mpi_rank == 0)
++            std::cout << "═══════════════════════════════════════════════════\n"
++                      << "  OVERLAP_PLUS  |+> trial state, beta=" << (double)(Beta)
++                      << " (tau=" << 0.5 * (double)(Beta) << " per segment)\n"
++                      << "  N=" << N << "  interpolation ladder: " << K
++                      << " rungs (0,0) -> (0,1) -> (1,1)\n"
++                      << "  T_equil=" << T_EQUIL << "  N_samples=" << N_SAMPLES
++                      << "  steps_per_sample=" << STEPS_PER_SAMP << "  ranks=" << mpi_size << "\n"
++                      << "═══════════════════════════════════════════════════\n";
++        double err = 0.0;
++        double lnF = run_mbar_pt_pipeline_mpi(ALPHA, beta_ladder, 0.0, wall_start, &err);
++        if (mpi_rank == 0) {
++            std::cout << "\n  RESULT  beta=" << (double)(Beta)
++                      << std::scientific << std::setprecision(10)
++                      << "  lnF=" << lnF << "  stderr=" << err
++                      << "  F=" << std::exp(lnF) << "\n";
++            std::ofstream out("overlap_plus.dat");
++            out << std::setprecision(17)
++                << "# beta lnF stderr N n_rungs n_samples\n"
++                << (double)(Beta) << " " << lnF << " " << err << " "
++                << N << " " << K << " " << N_SAMPLES << "\n";
++        }
++        divdiff_clear_up();
++        MPI_Finalize();
++        return 0;
++    }
++#endif
++    {
++        int pair = (argc > 1) ? std::atoi(argv[1]) : 12;
++        int ha = pair / 10 - 1, hb = pair % 10 - 1;
++        if (!(pair == 11 || pair == 12 || pair == 21 || pair == 22)) {
++            if (mpi_rank == 0) std::cerr << "usage: " << argv[0] << " {11|12|22}\n";
++            MPI_Finalize();
++            return 1;
++        }
++        if (N_B != 0 || N_A != N) {
++            if (mpi_rank == 0) std::cerr << "FATAL: OVERLAP_MODE needs A = all qubits, B = empty\n";
++            MPI_Finalize();
++            return 1;
++        }
++        g_ov_ham[0] = hb;   // copy 0: segment [0,c), acts first
++        g_ov_ham[1] = ha;   // copy 1: segment [c,q)
++
++        const double t = BETA_MIN;
++        double series = 1.0 - t * (OV_TR_H[ha] + OV_TR_H[hb])
++                      + 0.5 * t * t * (OV_TR_HH[ha][ha] + OV_TR_HH[hb][hb] + 2.0 * OV_TR_HH[ha][hb]);
++        double anchor = N * std::log(2.0) + std::log(series);
++
++        if (mpi_rank == 0)
++            std::cout << "═══════════════════════════════════════════════════\n"
++                      << "  OVERLAP MODE  Z_" << pair << "(tau) = Tr[exp(-tau H" << ha + 1
++                      << ") exp(-tau H" << hb + 1 << ")]\n"
++                      << std::scientific << std::setprecision(6)
++                      << "  N=" << N << "  tau ladder: " << K << " points ["
++                      << beta_ladder[0] << " to " << beta_ladder[K-1] << "]\n"
++                      << "  anchor ln Z(tau_min) = " << anchor << "\n"
++                      << "  T_equil=" << T_EQUIL << "  N_samples=" << N_SAMPLES
++                      << "  steps_per_sample=" << STEPS_PER_SAMP << "  ranks=" << mpi_size << "\n"
++                      << "═══════════════════════════════════════════════════\n";
++
++        double err = 0.0;
++        double lnZ = run_mbar_pt_pipeline_mpi(ALPHA, beta_ladder, anchor, wall_start, &err);
++
++        if (mpi_rank == 0) {
++            std::cout << "\n  RESULT  pair=" << pair << "  tau=" << BETA_TARGET
++                      << std::scientific << std::setprecision(10)
++                      << "  lnZ=" << lnZ << "  stderr=" << err << "\n";
++            std::ofstream out("overlap_lnZ_" + std::to_string(pair) + ".dat");
++            out << std::setprecision(17)
++                << "# pair tau lnZ stderr N n_beta n_samples\n"
++                << pair << " " << BETA_TARGET << " " << lnZ << " " << err << " "
++                << N << " " << K << " " << N_SAMPLES << "\n";
++        }
++        divdiff_clear_up();
++        MPI_Finalize();
++        return 0;
++    }
++#endif
++
+     // ── Compute anchors: exact classical Z_α(β_min) + off-diagonal O(β_min²)
+     //    quantum correction  (F7 fix; see compute_offdiag_anchor_terms).
+     //    All ranks compute identically -- O(2^N * Nop) is trivially fast. ────
+--- a/mbar_common.hpp
++++ b/mbar_common.hpp
+@@ -866,7 +866,7 @@
+ inline void print_sanity_violation(double S_alpha, int alpha_val, int N_A, std::ostream& out) {
+     // Job logs commonly merge stdout+stderr into one file. The results block
+     // the drivers print to std::cout just before calling this may still sit
+-    // in cout's buffer while this message (std::cerr) bypasses it, splicing
++    // in cout's buffer while this message (std::cerr) is unbuffered, splicing
+     // the FATAL text mid-line into later stdout output (seen in job 474004's
+     // log, where the message appeared truncated at "[0, "). Flush cout first
+     // so the merged log stays ordered, and flush `out` at the end.
+@@ -884,7 +884,7 @@
+ }
+ 
+ // ═══════════════════════════════════════════════════════════════════════════════
+-// hamiltonian_fingerprint()  —  [F6 fix] structural hash of the compiled Hamiltonian
++// hamiltonian_checksum()  —  [F6 fix] structural hash of the compiled Hamiltonian
+ //
+ // Recompiling against a different H.txt (or regenerating hamiltonian.hpp with
+ // different prepare.cpp conventions) changes P_matrix/D0_coeff/D_coeff etc.
+@@ -904,7 +904,7 @@
+     for (int i = 0; i < 8; i++) { h ^= (bits >> (i * 8)) & 0xFFu; h *= 1099511628211ULL; }
+     return h;
+ }
+-inline uint64_t hamiltonian_fingerprint() {
++inline uint64_t hamiltonian_checksum() {
+     uint64_t h = 1469598103934665603ULL;  // FNV-1a 64-bit offset basis
+     h = fnv1a_str(h, std::to_string(N) + "," + std::to_string(Nop) + "," + std::to_string(D0_size));
+     for (int i = 0; i < Nop; i++) h = fnv1a_str(h, P_matrix[i].to_string());
+@@ -925,7 +925,7 @@
+ // ═══════════════════════════════════════════════════════════════════════════════
+ // z1_anchor.dat cache — I/O  [F5/F6 fix]
+ //
+-// Key now includes a Hamiltonian fingerprint, qmax, T_EQUIL, and STEPS_PER_SAMP
++// Key now includes a Hamiltonian checksum, qmax, T_EQUIL, and STEPS_PER_SAMP
+ // on top of the original (beta_target, beta_min, N_BETA, N_SAMPLES, masks) --
+ // any of these changing invalidates a cached entry instead of silently reusing
+ // a stale one (F6). The bootstrap stderr is now stored alongside ln Z1 and
+@@ -990,7 +990,7 @@
+ // (beta, sample count, masks) -- not which Hamiltonian was compiled in, nor
+ // qmax/thermalization settings. Recompiling with different physics could
+ // silently reuse an answer computed under DIFFERENT physics, no error at
+-// all. Fixed by fingerprinting the whole compiled Hamiltonian into the key.
++// all. Fixed by including a checksum of the whole compiled Hamiltonian in the key.
+ // F5, plain-English: separately, even a correctly-matched cache hit set the
+ // cached ln Z_1's uncertainty to exactly zero -- as if it were known
+ // perfectly. The S_alpha error formula has an alpha^2 multiplier on that
+@@ -1013,7 +1013,7 @@
+     k.t_equil = T_EQUIL;
+     k.steps_per_samp = STEPS_PER_SAMP;
+     k.weight_logic_version = WEIGHT_LOGIC_VERSION;
+-    k.ham_hash = hamiltonian_fingerprint();
++    k.ham_hash = hamiltonian_checksum();
+     return k;
+ }
+ 
+@@ -1219,7 +1219,7 @@
+     g_signal_handler_rank = rank;
+     std::signal(SIGTERM, handle_checkpoint_signal);
+     // [2026-11-03] SIGUSR1 as well.  Open MPI 5 (PRRTE) aborts the whole job within a fraction of a second when mpirun receives SIGTERM, but it
+-    // forwards SIGUSR1 to every rank untouched, so recipe_sweep_job.sh now asks Slurm for --signal=B:USR1@120.  Same handler: it only sets the
++    // forwards SIGUSR1 to every rank untouched, so the Slurm job script now asks Slurm for --signal=B:USR1@120.  Same handler: it only sets the
+     // flag that the sampling loop's Allreduce already checks, so nothing else in the program changes (the log line still says SIGTERM).
+     std::signal(SIGUSR1, handle_checkpoint_signal);
+ }
+@@ -1263,7 +1263,7 @@
+     k.weight_logic_version = WEIGHT_LOGIC_VERSION;
+     k.beta_target = BETA_TARGET;
+     k.beta_min = BETA_MIN;
+-    k.ham_hash = hamiltonian_fingerprint();
++    k.ham_hash = hamiltonian_checksum();
+     return k;
+ }
+ 

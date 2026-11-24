@@ -1,0 +1,13 @@
+{
+ "Lx": 16,
+ "Ly": 1,
+ "N": 16,
+ "J": 1.0,
+ "Gamma": 0.5,
+ "vcut": [
+  8
+ ],
+ "hcut": [],
+ "n_bonds_full": 15,
+ "n_bonds_severed": 14
+}

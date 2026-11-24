@@ -1,0 +1,3 @@
+rung  0 s=0.0000  <q> exact 40.593  sampled 40.452 +- 0.208 (z=-0.68)  max|z|_bins=5.73 over 59 bins  TV=0.0130  chains=8
+rung  1 s=0.5000  <q> exact 44.839  sampled 45.096 +- 0.347 (z=+0.74)  max|z|_bins=2.13 over 57 bins  TV=0.0101  chains=8
+rung  2 s=1.0000  <q> exact 48.442  sampled 48.166 +- 0.148 (z=-1.87)  max|z|_bins=3.48 over 54 bins  TV=0.0146  chains=8
