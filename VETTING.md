@@ -200,9 +200,12 @@ resumed from a checkpoint, and the trace runs had short walks).
 
 ## Open items
 
-* **Fig. 3 (four-site ring, 24 runs) cannot be regenerated from this repository.** Its plotting
-  script and data are not in the project; `reference/fig_mc.py` is an older 4-run version that
-  reads a missing `mc_summary.npz`. Regenerate the figure (and its table) from new recorded runs.
+* **Fig. 3 and Tables tab:mc / tab:beta regenerated (2026-11-25)** from 24 recorded runs per beta
+  (`reference/ring_b{2,4,6}`, raw reduced potentials included; `reference/fig_mc.py` recomputes
+  every number). beta = 2, 4: -0.38 and -0.29 SEM. **beta = 6: -2.62 SEM** (old unrecorded 6-run
+  row said +0.14): lnF correlates with round trips (r = 0.89) and the residual builds up on the
+  first leg, i.e. the reference kernel (no start-shift) does not mix at beta = 6. Paper v23 says so.
+  Table tab:pq (30 single-ensemble chains) still has no recorded data or script.
 * **Raw reduced potentials** of the retained groups (`renyi_samples_*.bin`, 100 MB per run) are
   not in the repository or the review archives; they need a data deposit.
 * Multi-rank MPI remains untested (also not covered by the reviewer).

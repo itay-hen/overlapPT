@@ -1,7 +1,10 @@
+"""Reference PT--MBAR runs on the four-site ring, beta = 4, nine-ensemble ladder (paper Sec.
+"End-to-end validation", Table tab:mc, Fig. 3).  Usage: python3 runmc.py NSWEEP SEED[,SEED...] [BETA]   (BETA defaults to 4; Table tab:beta uses 2, 4, 6)
+Writes res_<seed>.npz per run in the current directory; fig_mc.py aggregates them."""
 import numpy as np, time, sys
 from scipy.linalg import expm
 import ptmbar as P
-beta=4.0; grid=[0.0,0.25,0.5,0.75,1.0]
+beta=float(sys.argv[3]) if len(sys.argv)>3 else 4.0; grid=[0.0,0.25,0.5,0.75,1.0]
 ladder=[(0.0,lb) for lb in grid]+[(la,1.0) for la in grid[1:]]
 i00,i01,i11=0,4,len(ladder)-1
 plus=np.ones(P.DIM)/np.sqrt(P.DIM); Aex={l:expm(-beta*P.H_dense(l)/2) for l in grid}
@@ -26,8 +29,11 @@ for sd in seeds:
     except Exception as e:
         sd_lnF=float('nan')
     tau=P.tau_int(qser)
-    np.savez(f'res_{sd}.npz',F=Fs[-1],lnF=lnF,sd_lnF=sd_lnF,f=f,f_ex=f_ex,F_ex=F_ex,
-             acc=acc,ns=ns,rt=rt,tau=tau,q=np.array([len(c.G) for c in cfg]),nconf=len(cfg))
+    # raw data kept so every number in Table tab:mc and Fig. 3 can be recomputed (fig_mc.py):
+    # u[k, n] = -ln W_k of stored configuration n, idx[n] = rung it was drawn at (time order).
+    np.savez_compressed(f'res_{sd}.npz',F=Fs[-1],lnF=lnF,sd_lnF=sd_lnF,f=f,f_ex=f_ex,F_ex=F_ex,
+             acc=acc,ns=ns,rt=rt,tau=tau,q=np.array([len(c.G) for c in cfg]),nconf=len(cfg),
+             u=u,idx=idx,qser=qser,seed=sd,ladder=np.array(ladder))
     print(f'   lnF={lnF:+.5f} (MBAR sd {sd_lnF:.5f})  roundtrips={rt}  tau_int(q)={tau:.2f} strides',flush=True)
     q=np.array([len(c.G) for c in cfg])
     print(f" seed {sd}: F={Fs[-1]:.5f}  max|f-f_ex|={np.abs(f-f_ex).max():.4f}  "

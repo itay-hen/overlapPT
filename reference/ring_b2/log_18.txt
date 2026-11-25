@@ -1,0 +1,11 @@
+   lnF=-0.31197 (MBAR sd 0.02424)  roundtrips=7228  tau_int(q)=0.52 strides
+ seed 18: F=0.73200  max|f-f_ex|=0.0159  swap=0.79-0.83  <q>=3.86  [38s]
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/numpy/_core/_methods.py:223: RuntimeWarning: Degrees of freedom <= 0 for slice
+  ret = _var(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/numpy/_core/_methods.py:215: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+
+F_beta  PT-MBAR = 0.73200 +/- nan  (1 runs)
+F_beta  exact   = 0.74117
+deviation = -1.24%
+mean |f-f_ex| per ensemble: [0.     0.0025 0.0028 0.0009 0.0017 0.0027 0.0056 0.0102 0.0159]
