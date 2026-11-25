@@ -24,3 +24,7 @@ models/**
 !models/*/runs_*/*/log.txt
 !models/*/runs_*/*/*/
 !models/*/runs_*/*/*/log.txt
+# run-group reports, split logs (log_part*.txt) and final result files
+!models/*/runs_*/*.txt
+!models/*/runs_*/*/log_part*.txt
+!models/*/runs_*/*/overlap_plus.dat

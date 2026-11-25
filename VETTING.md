@@ -7,8 +7,9 @@ v19). Section and equation numbers below refer to v19.
 
 **Status: partially validated.** Correct on every exact check at 4 qubits. The
 |+> open-walk mode, after the start-shift fix, lands 1.6 SEM low at 12 qubits (result 6)
-and 2.1 SEM low at 16 qubits (result 7). Each is acceptable alone, but together they hint
-at a small negative bias, roughly 5-10% in F, that is not yet explained (see "Open items").
+and 2.1 SEM low at 16 qubits (result 7). A newer 12-qubit group is -0.24 SEM. The 16-qubit
+offset is traced to a slow mode, the relative Neel orientation of the four quadrants; with
+a move that flips one quadrant (OV_CUT_FLIP_ALL) twelve runs are +0.93 SEM (result 8).
 Please treat it as code under review.
 
 ## What to look at
@@ -136,6 +137,22 @@ are in `results/per_run_results.txt`.
    lattice states per rung fall from ~9000 on leg 1 to ~2800 on leg 2. Each run took
    ~3 h on one core (12 in parallel on one laptop). Logs: `models/4x4_v2/runs_plus_b8/`;
    reference: `models/4x4_v2/plus_ref_b8_k25.json`.
+8. **4x4 as in 7, plus the quadrant flip (2026-11-24).** Build flags `-DOVERLAP_PLUS
+   -DOV_CUT_FLIP=1 -DOV_CUT_FLIP_ALL=1 -DOV_INIT_CLASSICAL=1 -DBeta=8 -DMBAR_N_BETA=25
+   -Dqmax=160 -DMBAR_T_EQUIL=20000 -DMBAR_N_SAMPLES=20000 -DMBAR_KEEP_SAMPLES=1` at commit
+   48c1c62. Rebuilding that commit with these flags reproduces the run binary byte for byte
+   (sha256 c4b93ccc...b557), so the single-draw segment exchange is confirmed. 12 runs:
+   ln F = -1.48895 +- 0.05396 (s.d. 0.187), +0.93 SEM from exact (t_11, p = 0.37).
+   `tools/plus_bias_check.py` on the kept samples: pooled fit -1.49111; pieces m = 1, 2, 4, 8
+   give -1.48895, -1.48463, -1.48081, -1.46850 (finite-sample bias <= ~0.02); the score at the
+   exact f implies +0.048 +- 0.054 (actual +0.050), no drift by position, per-rung
+   chi2 = 15.5 / 24. `tools/plus_support.py` (fraction of walks with no severed-bond hop):
+   all 25 rungs within 1.7 sigma of exact, middle rung 0.01825 +- 0.00057 vs 0.01811.
+   Without the move (8 long-warm-up runs, `runs_longwarm`) the middle rung was
+   0.01586 (-4.9 sigma). The second half of each run's log.txt is empty (written into a
+   Google Drive folder by a detached process), so round trips and per-rung <q> are not
+   available; `log_part1.txt` holds the first half. All 25 walkers had even y0 parity at every
+   warm-up check. Outputs: `models/4x4_v2/runs_cutflip/{bias_check,support}.txt`.
 5. **Trace variant (closed walks summed over y0), 4x3, beta=4, 5 runs per ensemble.**
    (1/2) ln R = -0.5340 +- 0.0493, exact -0.5348 (+0.02 SEM); one of the three
    anchored free energies, ln Z11, is +2.5 SEM off. Paper Table tab:cpp.
@@ -170,14 +187,11 @@ resumed from a checkpoint, and the trace runs had short walks).
 
 ## Open items
 
-* **Possible small negative bias in the open-walk mode** (focused write-up: `BIAS_REVIEW.md`). 4x3 is -1.64 SEM and 4x4 is
-  -2.08 SEM; the pooled deviation is about -2.6 sigma. Candidates, none tested yet:
-  (a) a slow mode not removed by 10^4 equilibration sweeps; the block-length growth of
-  the bootstrap error shows such a mode exists. Test: longer equilibration, or keep the
-  samples and compare the halves. (b) a detailed-balance error in a move that only shows
-  at larger q; check 3 tests the y0 marginal only on 2x2. Test: the same marginal and
-  q-distribution checks on 4x3 at one rung against `plus_reference.py`-style exact
-  marginals. (c) MBAR finite-sample bias on the long first leg. Test: more rungs on leg 1.
+* **Open-walk bias (resolved for 4x4; see `BIAS_REVIEW.md`, "Outcome").** The 4x4 offset
+  came from the quadrant-orientation mode and is gone with OV_CUT_FLIP_ALL (result 8). The
+  older 4x3 group (-1.64 SEM) is consistent with chance given the newer group (-0.24 SEM) and
+  its score test. Still open: the per-run bootstrap errors grow with block length, so only
+  run-to-run spreads are quotable; larger lattices will have more blocks to reorient.
 * The 2x2 PT result (3) predates the start-shift move; spin flips mix y0 there, but it
   has not been re-run.
 * Multi-rank MPI builds are untested in the overlap modes (all runs used the stub);

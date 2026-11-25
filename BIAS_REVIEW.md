@@ -5,6 +5,36 @@ This is a focused request, separate from the general notes in `VETTING.md` (read
 manuscript. Everything needed to reproduce is in this archive. The exact references are
 computed by `tools/plus_reference.py`; the 4x4 computation takes 10 s.
 
+## Outcome (2026-11-24)
+
+**4x4: found.** The offset came from a slowly sampled sector: the relative Neel orientation
+of the four quadrants of the severed lattice. A walk can avoid hopping on the severed bonds
+only if the quadrants carry compatible orientations. Without a dedicated move a quadrant is
+reoriented only through many unfavourable single-spin flips.
+
+* **Decisive test (`tools/plus_support.py`).** The fraction of walks at each rung with no
+  severed-bond hop is computed exactly by propagating with the severed bonds' X terms removed.
+  Eight long-warm-up runs without the move gave 0.01586 at the middle rung against the exact
+  0.01811 (-4.9 sigma), with -2.3 and -2.5 sigma two rungs to either side. This was the
+  reviewer's "support" observation, seen in the middle of the ladder rather than at the end.
+* **Fix.** `-DOV_CUT_FLIP_ALL=1` flips one H2 component chosen uniformly (`OV_CUT_MASKS` from
+  `tools/make_tables.py`). It is a fixed involution with a state-independent choice, accepted
+  with the plain Metropolis ratio.
+* **Result.** Twelve runs give ln F = -1.48895 +- 0.05396 vs exact -1.53887 (+0.93 SEM),
+  s.d. 0.187. Support agrees at all 25 rungs (max |z| 1.7). The exact-score test gives chi2 15.5
+  over 24 rungs and no drift. See `VETTING.md` result 8.
+
+**Excluded along the way:**
+* **Walk-start parity.** Odd-parity walkers clear within 1000 warm-up steps. The exact odd mass
+  is about 1e-6.
+* **MBAR finite-sample bias.** It is at most about 0.02 at full run length.
+* **A detailed-balance error in start-shift.** The reviewer found none.
+
+**4x3:** a newer group of 12 runs is -0.24 SEM, and its score test is consistent with zero.
+The original -1.64 SEM is therefore most likely chance.
+
+Everything below is the original request, kept as written.
+
 ## The observation
 
 The |+> open-walk mode was run as 12 independent runs per lattice, with the start-shift move, beta = 8, and

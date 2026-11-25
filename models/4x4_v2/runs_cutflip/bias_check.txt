@@ -1,0 +1,26 @@
+== 1. per-run MBAR (12 runs, 20000 samples per rung)
+   models/4x4_v2/runs_cutflip/s1: lnF=-1.66091  (-0.1220)
+   models/4x4_v2/runs_cutflip/s2: lnF=-1.61373  (-0.0749)
+   models/4x4_v2/runs_cutflip/s3: lnF=-1.85394  (-0.3151)
+   models/4x4_v2/runs_cutflip/s4: lnF=-1.54777  (-0.0089)
+   models/4x4_v2/runs_cutflip/s5: lnF=-1.43353  (+0.1053)
+   models/4x4_v2/runs_cutflip/s6: lnF=-1.45583  (+0.0830)
+   models/4x4_v2/runs_cutflip/s7: lnF=-1.26508  (+0.2738)
+   models/4x4_v2/runs_cutflip/s8: lnF=-1.32834  (+0.2105)
+   models/4x4_v2/runs_cutflip/s9: lnF=-1.15427  (+0.3846)
+   models/4x4_v2/runs_cutflip/s10: lnF=-1.44545  (+0.0934)
+   models/4x4_v2/runs_cutflip/s11: lnF=-1.55258  (-0.0137)
+   models/4x4_v2/runs_cutflip/s12: lnF=-1.55600  (-0.0171)
+   mean -1.48895 +- 0.05396  (+0.0499)
+== 2. pooled fit of all runs
+   -1.49111  (+0.0478)
+== 3. pieces of 1/m of each run (piece estimates averaged per run; error over runs)
+   m=1: 20000 samples/piece  mean -1.48895 +- 0.05396  (+0.0499)
+   m=2: 10000 samples/piece  mean -1.48463 +- 0.05421  (+0.0542)
+   m=4: 5000 samples/piece  mean -1.48081 +- 0.05385  (+0.0581)
+   m=8: 2500 samples/piece  mean -1.46850 +- 0.05436  (+0.0704)
+== 4. MBAR score at the exact free energies (ln F exact -1.53887)
+   implied first-order ln F error, whole runs: +0.04789 +- 0.05370   (MBAR fits above: +0.04992)
+   by position in run: +0.0187+-0.1829  +0.1700+-0.1441  +0.0573+-0.1137  -0.0544+-0.1682
+   per-rung mean score / SEM over runs: +0.1 -0.1 -0.4 -0.8 -1.1 -1.2 -1.1 -0.8 -0.5 -0.1 +0.4 +0.6 +0.1 +0.1 +0.2 +0.5 +0.8 +1.1 +1.5 +1.8 +1.1 +0.5 -0.1 -0.8 -1.0
+   chi2 over 24 independent rungs (score sums to 0): 15.5
