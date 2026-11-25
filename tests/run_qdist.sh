@@ -10,7 +10,10 @@
 # kernel, no PT) of STEPS updates each at every rung. Reported per rung: <q> exact vs mean
 # over chains +- SEM, and the largest |z| over the q bins with exact P(q) > 1e-3, where z
 # uses the between-chain standard error of each bin (replication-based, as in the paper).
-# Output goes to MODEL_DIR/qdist/.
+# Output goes to MODEL_DIR/qdist/. The exact reference is cached as exact_<key>.json, where
+# <key> hashes H1.txt, H2.txt, beta, K, the requested rungs and the series order, and the
+# file's own "key" field is checked before use. Histograms go to a fresh per-invocation
+# directory, and only that directory is aggregated, so stale files cannot enter.
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 source "$SRC/common_flags.sh"
@@ -22,19 +25,47 @@ OUT="$MODEL/qdist"; mkdir -p "$OUT"
 g++ -O3 -w "${OVERLAP_BASE_FLAGS[@]}" -DSERIAL_MPI "${MODEL_FLAGS[@]}" ${EXTRA[@]+"${EXTRA[@]}"} \
     -I "$MODEL/build" -I "$SRC/serial" -o "$OUT/qdist_test" "$SRC/tests/qdist_test.cpp"
 WHICH=$(echo $JS | tr ' ' ',')
-[ -f "$OUT/exact.json" ] || python3 "$SRC/tools/walk_sum_exact.py" "$MODEL" --beta $BETA --rungs $K \
-    --which $WHICH --M 512 --out "$OUT/exact.json" > "$OUT/exact.txt"
+M=512
+KEY=$(python3 - "$MODEL" "$BETA" "$K" "$WHICH" "$M" <<'PY'
+import sys, hashlib
+model, beta, K, which, M = sys.argv[1:]
+h = hashlib.sha256()
+for f in ('H1.txt', 'H2.txt'):
+    h.update(open(f'{model}/{f}', 'rb').read())
+h.update(f'beta={float(beta)!r} K={int(K)} which={which} M={int(M)}'.encode())
+print(h.hexdigest()[:16])
+PY
+)
+REF="$OUT/exact_$KEY.json"
+if [ ! -f "$REF" ]; then
+  python3 "$SRC/tools/walk_sum_exact.py" "$MODEL" --beta $BETA --rungs $K \
+      --which $WHICH --M $M --out "$REF.tmp" > "$OUT/exact_$KEY.txt"
+  python3 - "$REF.tmp" "$KEY" "$BETA" "$K" "$WHICH" <<'PY'
+import sys, json
+p, key, beta, K, which = sys.argv[1:]
+d = json.load(open(p)); d['key'] = key
+d['key_inputs'] = dict(beta=float(beta), K=int(K), which=which)
+json.dump(d, open(p, 'w'))
+PY
+  mv "$REF.tmp" "$REF"
+fi
+RUNDIR=$(mktemp -d "$OUT/hist_XXXXXX")
 for j in $JS; do
   s=$(python3 -c "print($j/($K-1))")
   for c in $(seq 1 $R); do echo "$s $j $c"; done
-done | xargs -P ${NPAR:-8} -n 3 sh -c "'$OUT/qdist_test' \$0 $STEPS \$((\$1*1000+\$2)) > '$OUT/h_j'\$1'_c'\$2'.txt'"
-python3 - "$OUT" <<'PY'
-import sys, json, glob, re, numpy as np
-out = sys.argv[1]
-ex = json.load(open(f'{out}/exact.json'))
+done | xargs -P ${NPAR:-8} -n 3 sh -c "'$OUT/qdist_test' \$0 $STEPS \$((\$1*1000+\$2)) > '$RUNDIR/h_j'\$1'_c'\$2'.txt'"
+python3 - "$REF" "$KEY" "$RUNDIR" "$JS" "$R" <<'PY'
+import sys, json, numpy as np
+ref, key, hdir, js, R0 = sys.argv[1], sys.argv[2], sys.argv[3], [int(x) for x in sys.argv[4].split()], int(sys.argv[5])
+ex = json.load(open(ref))
+if ex.get('key') != key:
+    raise SystemExit(f'{ref}: key {ex.get("key")} does not match this invocation ({key})')
+if sorted(r['j'] for r in ex['rung']) != sorted(js):
+    raise SystemExit(f'{ref}: rungs {[r["j"] for r in ex["rung"]]} differ from the requested {js}')
+print(f'reference {ref} (key {key}); histograms {hdir}')
 for r in ex['rung']:
     j = r['j']; P = np.clip(np.array(r['P']), 0, None)
-    fs = sorted(glob.glob(f'{out}/h_j{j}_c*.txt'))
+    fs = [f'{hdir}/h_j{j}_c{c}.txt' for c in range(1, R0 + 1)]
     H = []
     for f in fs:
         h = np.zeros(len(P))

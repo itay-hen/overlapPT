@@ -27,11 +27,13 @@ cp "$SRC"/{mbarpt_mpi.cpp,mainQMC.hpp,replica.hpp,divdiff.hpp,mbar_common.hpp,pa
 source "$SRC/common_flags.sh"
 FLAGS=(-O3 "${OVERLAP_BASE_FLAGS[@]}" "$@")
 if command -v mpicxx >/dev/null 2>&1; then
-    mpicxx "${FLAGS[@]}" -o "$BUILD/overlap.bin" "$BUILD/mbarpt_mpi.cpp"
+    CMD=(mpicxx "${FLAGS[@]}" -o "$BUILD/overlap.bin" "$BUILD/mbarpt_mpi.cpp")
 else
     echo "mpicxx not found: building single-process binary with serial/serial_mpi.h" >&2
-    g++ "${FLAGS[@]}" -DSERIAL_MPI -I "$SRC/serial" -o "$BUILD/overlap.bin" "$BUILD/mbarpt_mpi.cpp"
+    CMD=(g++ "${FLAGS[@]}" -DSERIAL_MPI -I "$SRC/serial" -o "$BUILD/overlap.bin" "$BUILD/mbarpt_mpi.cpp")
 fi
+"${CMD[@]}"
 echo "built $BUILD/overlap.bin  (run from a separate directory per pair: overlap.bin 11 | 12 | 22)"
 
-python3 "$SRC/tools/record_build.py" "$BUILD" "${FLAGS[@]}"
+# Manifest: the exact compiler command, compiler version, source and binary hashes, git revision.
+python3 "$SRC/tools/record_build.py" "$BUILD" "$SRC" -- "${CMD[@]}"

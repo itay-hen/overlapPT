@@ -8,8 +8,9 @@ v19). Section and equation numbers below refer to v19.
 **Status: partially validated.** Correct on every exact check at 4 qubits. The
 |+> open-walk mode, after the start-shift fix, lands 1.6 SEM low at 12 qubits (result 6)
 and 2.1 SEM low at 16 qubits (result 7). A newer 12-qubit group is -0.24 SEM. The 16-qubit
-offset is traced to a slow mode, the relative Neel orientation of the four quadrants; with
-a move that flips one quadrant (OV_CUT_FLIP_ALL) twelve runs are +0.93 SEM (result 8).
+offset is consistent with slow mixing of the relative Neel orientation of the four quadrants;
+with a move that flips one quadrant (OV_CUT_FLIP_ALL) plus the classical initialization, twelve
+runs are +0.93 SEM (result 8). The mechanism is a supported hypothesis, not a demonstrated cause.
 Please treat it as code under review.
 
 ## What to look at
@@ -144,9 +145,12 @@ are in `results/per_run_results.txt`.
    (sha256 c4b93ccc...b557), so the single-draw segment exchange is confirmed. 12 runs:
    ln F = -1.48895 +- 0.05396 (s.d. 0.187), +0.93 SEM from exact (t_11, p = 0.37).
    `tools/plus_bias_check.py` on the kept samples: pooled fit -1.49111; pieces m = 1, 2, 4, 8
-   give -1.48895, -1.48463, -1.48081, -1.46850 (finite-sample bias <= ~0.02); the score at the
-   exact f implies +0.048 +- 0.054 (actual +0.050), no drift by position, per-rung
-   chi2 = 15.5 / 24. `tools/plus_support.py` (fraction of walks with no severed-bond hop):
+   give -1.48895, -1.48463, -1.48081, -1.46850 (splitting moves the mean by up to 0.0205,
+   pooling by 0.0022; neither bounds the bias); the score at the exact f implies
+   +0.048 +- 0.054 (actual +0.050), no drift by position. (The per-rung sum of squared z,
+   15.5, is descriptive only: the rung scores are correlated and the run-level covariance has
+   rank <= 11, so it is not a chi2.) The comparison with result 7 changes the move set, the
+   initialization, the warm-up length and the build provenance together. `tools/plus_support.py` (fraction of walks with no severed-bond hop):
    all 25 rungs within 1.7 sigma of exact, middle rung 0.01825 +- 0.00057 vs 0.01811.
    Without the move (8 long-warm-up runs, `runs_longwarm`) the middle rung was
    0.01586 (-4.9 sigma). The second half of each run's log.txt is empty (written into a
@@ -185,10 +189,30 @@ resumed from a checkpoint, and the trace runs had short walks).
 | `ExExFloat::normalize` called `frexp` | exponent read from the IEEE-754 bits for finite normal values, `frexp` otherwise | bitwise identical to `frexp` on 2x10^7 random bit patterns plus zeros, subnormals, inf, nan |
 | Exact open-walk references needed dense diagonalization | `tools/plus_reference.py`: sparse `expm_multiply` on \|+> per distinct lambda | 4x3: all 17 f_k within 1.4e-13 of `ed_overlap.py`, 0.9 s. 4x4 with both midline cuts, beta=8: F = 0.2146230061, 10 s (`models/4x4_v2/plus_ref_b8.json`) |
 
+## Fixes after the external review of 2026-11-25 (v22 + archive g)
+
+| finding | change | check |
+|---|---|---|
+| `tests/run_qdist.sh` reused any `qdist/exact.json` and globbed histograms, so a stale beta=2 reference gave +10.6 SEM at beta=3 | Reference cached as `qdist/exact_<key>.json`, key = sha256 of H1.txt, H2.txt, beta, K, rungs, series order; key and rung list verified before use; histograms in a fresh `qdist/hist_XXXXXX/`, only that directory aggregated | 2x2 with a stale beta=2 `exact.json` present: beta=3 middle rung exact 5.674 (reviewer 5.6738), sampled 5.663 +- 0.037 |
+| `tools/plus_bias_check.py` returned f = (0,0) for disjoint supports and for a NaN u-matrix | `validate()`: rejects NaN/-inf, zero weight at the sampling rung, and disconnected rung-support graphs; the fit also rejects non-finite f or score; the per-rung "chi2" is relabelled descriptive | `tests/test_plus_bias_check.py` (4 cases, all pass); the 4x4 cut-flip data still validate |
+| Provenance not bound to runs; manifest recorded `g++` even for MPI and omitted serial flags | `build_overlap.sh` records the exact compiler command as run, with `<MODEL>`/`<SRC>` placeholders; `record_build.py` adds the compiler version, git revision and clean-tree flag. `detach_run.py` appends `run_manifest.json` to the run directory (binary sha256 + the matching build manifest), takes `--seed N`, and appends to log.txt. The driver prints the seed and appends it to `run_seed_r<rank>.txt`; `OVERLAP_SEED` makes a run replayable | 2x2: two runs with OVERLAP_SEED=42 give identical overlap_plus.dat; detached run's manifest matches its build |
+| Orientation claim too strong | `tools/plus_orientation.py`: exact quadrant-agreement probability along the walk. 4x4 middle rung: origin (H2 side) 0.1251 with or without the support condition; far end (H1 side) 0.4364 -> 0.8235. Paper v23 revised accordingly | reproduces the reviewer's numbers |
+
 ## Open items
 
-* **Open-walk bias (resolved for 4x4; see `BIAS_REVIEW.md`, "Outcome").** The 4x4 offset
-  came from the quadrant-orientation mode and is gone with OV_CUT_FLIP_ALL (result 8). The
+* **Fig. 3 (four-site ring, 24 runs) cannot be regenerated from this repository.** Its plotting
+  script and data are not in the project; `reference/fig_mc.py` is an older 4-run version that
+  reads a missing `mc_summary.npz`. Regenerate the figure (and its table) from new recorded runs.
+* **Raw reduced potentials** of the retained groups (`renyi_samples_*.bin`, 100 MB per run) are
+  not in the repository or the review archives; they need a data deposit.
+* Multi-rank MPI remains untested (also not covered by the reviewer).
+* **Output files written inside a Google Drive folder sometimes end up 0 bytes** (the 4x4 cut-flip
+  second-half logs; once, all eight `hist_*.txt` of `tests/run_small_checks.sh`, which then crashed
+  in check 2 and passed on an immediate rerun). Run production and tests from a local directory.
+
+* **Open-walk bias (4x4 removed; see `BIAS_REVIEW.md`, "Outcome").** The 4x4 offset is gone
+  with OV_CUT_FLIP_ALL plus classical initialization (result 8); slow quadrant-orientation
+  mixing is the supported explanation. The
   older 4x3 group (-1.64 SEM) is consistent with chance given the newer group (-0.24 SEM) and
   its score test. Still open: the per-run bootstrap errors grow with block length, so only
   run-to-run spreads are quotable; larger lattices will have more blocks to reorient.

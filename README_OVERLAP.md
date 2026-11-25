@@ -110,7 +110,12 @@ script uses the single-process stand-in `serial/serial_mpi.h` (laptop testing on
 | `tools/ed_overlap.py` | exact Z_ab(tau), R(tau), overlap, gaps, anchor error |
 | `tools/plus_reference.py` | sparse exact \|+> reference (lnF and every rung's f_k) |
 | `tools/plus_observables.py` | exact per-rung \<q\> and var(q) (and optionally the y0 marginal) for the |+> ladder |
-| `tools/plus_bias_check.py` | offline MBAR on kept samples: per run, pooled, split into pieces, by position |
+| `tools/plus_bias_check.py` | offline MBAR on kept samples: per run, pooled, split into pieces, by position; rejects NaN, zero own-rung weight and disconnected supports |
+| `tests/test_plus_bias_check.py` | regression tests for that validation |
+| `tools/plus_support.py` | exact vs sampled fraction of walks with no severed-bond hop, per rung |
+| `tools/plus_orientation.py` | exact relative Neel orientation of the severed blocks at the origin, middle and far end of the walk |
+| `tools/detach_run.py` | detached run launcher; writes `run_manifest.json` (binary hash + build manifest), `--seed N` |
+| `tools/record_build.py` | build manifest: exact compiler command, compiler version, git revision, source and binary hashes |
 | `tests/marg_test.cpp` | single-rung chain on any model: block means of q, q^2 and the y0 histogram |
 | `tools/combine_overlap.py` | R(tau) with error from three runs, optional ED comparison |
 | `serial/serial_mpi.h` | single-process MPI stand-in for local builds (`-DSERIAL_MPI`) |

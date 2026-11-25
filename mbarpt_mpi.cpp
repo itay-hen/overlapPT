@@ -1760,6 +1760,21 @@ int main(int argc, char** argv) {
     // ── One-time initialization of shared QMC infrastructure ─────────────────
     divdiff_init();
     init_rng();  // uses mpi_rank for EXACTLY_REPRODUCIBLE seed variation
+    // [provenance] OVERLAP_SEED=<n> fixes the process seed (n + rank) so a run can be replayed.
+    // Every launch appends its seed to run_seed_r<rank>.txt in the run directory. A resumed run
+    // restores each replica's RNG state from the checkpoint, so the first launch's seed is the
+    // one that determines the trajectory.
+    if (const char* e = std::getenv("OVERLAP_SEED")) {
+        rng_seed = static_cast<unsigned int>(std::stoul(e)) + static_cast<unsigned int>(mpi_rank);
+        rng.seed(rng_seed);
+    }
+    {
+        std::cerr << "RUN rank=" << mpi_rank << " rng_seed=" << rng_seed
+                  << (std::getenv("OVERLAP_SEED") ? " (OVERLAP_SEED)" : " (random_device)") << std::endl;
+        std::ofstream sf("run_seed_r" + std::to_string(mpi_rank) + ".txt", std::ios::app);
+        sf << "launch_unix " << (long long)std::time(nullptr) << " rng_seed " << rng_seed
+           << (std::getenv("OVERLAP_SEED") ? " source OVERLAP_SEED" : " source random_device") << "\n";
+    }
     {
         double curr = 1.0; factorial[0] = curr;
         for (int k = 1; k < qmax; k++) { curr *= k; factorial[k] = curr; }

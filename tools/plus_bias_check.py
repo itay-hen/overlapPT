@@ -52,8 +52,34 @@ def logp(U, f):
     return a - logsumexp(a, axis=1)[:, None]
 
 
+def validate(u, K):
+    """Abort unless u is a usable MBAR input: no NaN or -inf; every configuration has
+    nonzero weight at the rung it was drawn at; and the rungs are connected, i.e. the
+    graph with an edge i-j whenever a sample drawn at i has nonzero weight at j (or the
+    reverse) is connected. Without connectivity the relative free energies of the
+    components are not identified, and a zero score does not mean a valid fit."""
+    if np.isnan(u).any() or np.isneginf(u).any():
+        raise SystemExit('u-matrix contains NaN or -inf')
+    own = u[:, np.arange(K), np.arange(K)]
+    if not np.all(own < 1e299):
+        bad = np.unique(np.nonzero(~(own < 1e299))[1])
+        raise SystemExit(f'zero or non-finite weight at the sampling rung itself (rungs {bad.tolist()})')
+    A = (u < 1e299).any(axis=0)          # A[i, j]: some sample drawn at i has support at j
+    A = A | A.T
+    seen = {0}; todo = [0]
+    while todo:
+        i = todo.pop()
+        for j in np.nonzero(A[i])[0]:
+            if j not in seen:
+                seen.add(int(j)); todo.append(int(j))
+    if len(seen) != K:
+        raise SystemExit(f'rungs not connected by sample support: reached {sorted(seen)} from rung 0')
+
+
 def mbar_fit(u, K):
-    """u: [n, K, K] -> (ln F, f) with f[K-1] = 0. Aborts if the fit does not converge."""
+    """u: [n, K, K] -> (ln F, f) with f[K-1] = 0. Aborts if the input is invalid
+    (see validate) or the fit does not converge."""
+    validate(u, K)
     U = np.where(u.reshape(-1, K) > 1e299, np.inf, u.reshape(-1, K))
     n = u.shape[0]
 
@@ -68,7 +94,7 @@ def mbar_fit(u, K):
                  options=dict(maxiter=20000, gtol=1e-10 * n, ftol=1e-16))
     f = np.append(r.x, 0.0)
     resid = np.abs(obj(r.x)[1]).max() / n
-    if resid > 1e-6:
+    if not (np.all(np.isfinite(f)) and np.isfinite(resid)) or resid > 1e-6:
         raise SystemExit(f'MBAR fit did not converge: max |score|/n = {resid:.2e} ({r.message})')
     mid = (K - 1) // 2
     return f[0] + f[-1] - 2 * f[mid], f
@@ -76,6 +102,7 @@ def mbar_fit(u, K):
 
 def score_terms(u, K, f):
     """Per-slice score contributions g_t (n x K) and the summed Hessian at f."""
+    validate(u, K)
     n = u.shape[0]
     U = np.where(u.reshape(-1, K) > 1e299, np.inf, u.reshape(-1, K))
     P = np.exp(logp(U, f))                      # (n*K) x K
@@ -135,12 +162,16 @@ def main():
         shift = lambda gs: float(c[:-1] @ np.linalg.solve(Hr, -gs[:-1]))
         S_rb = np.array([[shift(G[i, b]) for b in range(B)] for i in range(R)])
         S_r = np.array([shift(G[i].mean(0)) for i in range(R)])
+        if not np.all(np.isfinite(G)):
+            raise SystemExit('non-finite score at the exact free energies')
         print(f'   implied first-order ln F error, whole runs: {S_r.mean():+.5f} +- {sem(S_r):.5f}'
               f'   (MBAR fits above: {full.mean() - ref["lnF"]:+.5f})')
         print('   by position in run: ' + '  '.join(f'{S_rb[:, b].mean():+.4f}+-{sem(S_rb[:, b]):.4f}' for b in range(B)))
         gm = G.mean(1); gz = gm.mean(0) / (gm.std(0, ddof=1) / np.sqrt(R))
         print('   per-rung mean score / SEM over runs: ' + ' '.join(f'{z:+.1f}' for z in gz))
-        print(f'   chi2 over {K - 1} independent rungs (score sums to 0): {np.sum(gz[:-1] ** 2):.1f}')
+        # Not a chi^2: the per-rung scores are correlated, and with R runs the run-level
+        # covariance has rank <= R-1, so no proper K-1 dimensional test is available.
+        print(f'   sum of squared per-rung z (descriptive only; correlated, not chi2): {np.sum(gz[:-1] ** 2):.1f}')
 
 
 if __name__ == '__main__':

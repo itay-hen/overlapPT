@@ -7,10 +7,13 @@ computed by `tools/plus_reference.py`; the 4x4 computation takes 10 s.
 
 ## Outcome (2026-11-24)
 
-**4x4: found.** The offset came from a slowly sampled sector: the relative Neel orientation
-of the four quadrants of the severed lattice. A walk can avoid hopping on the severed bonds
-only if the quadrants carry compatible orientations. Without a dedicated move a quadrant is
-reoriented only through many unfavourable single-spin flips.
+**4x4: removed; explanation supported, not proven.** The offset is consistent with slow mixing
+of the relative Neel orientation of the four quadrants of the severed lattice. Without a dedicated
+move a quadrant is reoriented only through many unfavourable single-spin flips. The link to support
+is localized along the walk (`tools/plus_orientation.py`, middle rung): the probability that all
+four quadrants agree is 0.125 at the origin (H2 side) with or without the no-severed-hop condition,
+and 0.436 -> 0.824 at the H1 end. Walks with no severed hop favour aligned quadrants at the H1 end
+but do not require them.
 
 * **Decisive test (`tools/plus_support.py`).** The fraction of walks at each rung with no
   severed-bond hop is computed exactly by propagating with the severed bonds' X terms removed.
@@ -20,14 +23,16 @@ reoriented only through many unfavourable single-spin flips.
 * **Fix.** `-DOV_CUT_FLIP_ALL=1` flips one H2 component chosen uniformly (`OV_CUT_MASKS` from
   `tools/make_tables.py`). It is a fixed involution with a state-independent choice, accepted
   with the plain Metropolis ratio.
-* **Result.** Twelve runs give ln F = -1.48895 +- 0.05396 vs exact -1.53887 (+0.93 SEM),
-  s.d. 0.187. Support agrees at all 25 rungs (max |z| 1.7). The exact-score test gives chi2 15.5
-  over 24 rungs and no drift. See `VETTING.md` result 8.
+* **Result.** Twelve runs (move plus classical initialization) give ln F = -1.48895 +- 0.05396
+  vs exact -1.53887 (+0.93 SEM), s.d. 0.187. Support agrees at all 25 rungs (max |z| 1.7). The
+  exact-score test implies +0.048 +- 0.054, with no drift. The comparison also changes the
+  initialization, warm-up length and build provenance. See `VETTING.md` result 8.
 
 **Excluded along the way:**
 * **Walk-start parity.** Odd-parity walkers clear within 1000 warm-up steps. The exact odd mass
   is about 1e-6.
-* **MBAR finite-sample bias.** It is at most about 0.02 at full run length.
+* **MBAR finite-sample bias as the main effect.** Splitting runs moves the mean by up to 0.0205,
+  pooling by 0.0022, against an SEM of 0.054 (this is not an upper bound).
 * **A detailed-balance error in start-shift.** The reviewer found none.
 
 **4x3:** a newer group of 12 runs is -0.24 SEM, and its score test is consistent with zero.
