@@ -126,9 +126,29 @@ def logW(c, la, lb, beta, y=None):
     return np.log(W) if W > 0 else -np.inf
 
 # ---------------------------------------------------------------- Monte Carlo
+# START_SHIFT = True adds the start-shift move (paper Sec. "Local updates", move 6): with
+# probability 0.2 per attempt, either prepend a generator P_k (k uniform) and move the origin to
+# y0' = P_k y0, so every configuration of the old walk is kept after the new first hop, or delete
+# the first hop and move the origin to y1 (each branch with probability 1/2). Proposal ratio M,
+# as for insertion and removal. Move probabilities then become 0.32 / 0.32 / 0.16 / 0.2.
+START_SHIFT = False
+
 def sweep(c, la, lb, beta, rng, lw):
     for _ in range(4):
         q = len(c.G)
+        if START_SHIFT:
+            if rng.random() < 0.2:
+                if rng.random() < 0.5:                # prepend P_k, origin y0 -> y0 ^ P_k
+                    k = int(rng.integers(M)); oy = c.y0
+                    c.G.insert(0, k); c.y0 = int(oy ^ MASKS[k]); lw2 = logW(c, la, lb, beta)
+                    if np.log(rng.random() + 1e-300) < lw2 - lw + np.log(M): lw = lw2
+                    else: c.G.pop(0); c.y0 = oy
+                else:                                 # delete first hop, origin -> y1
+                    if q == 0: continue
+                    oy = c.y0; k = c.G.pop(0); c.y0 = int(oy ^ MASKS[k]); lw2 = logW(c, la, lb, beta)
+                    if np.log(rng.random() + 1e-300) < lw2 - lw - np.log(M): lw = lw2
+                    else: c.G.insert(0, k); c.y0 = oy
+                continue
         u = rng.random()
         if u < 0.4:                                   # insert
             k = rng.integers(M); p = rng.integers(q + 1)

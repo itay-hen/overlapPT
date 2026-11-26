@@ -204,7 +204,10 @@ resumed from a checkpoint, and the trace runs had short walks).
   (`reference/ring_b{2,4,6}`, raw reduced potentials included; `reference/fig_mc.py` recomputes
   every number). beta = 2, 4: -0.38 and -0.29 SEM. **beta = 6: -2.62 SEM** (old unrecorded 6-run
   row said +0.14): lnF correlates with round trips (r = 0.89) and the residual builds up on the
-  first leg, i.e. the reference kernel (no start-shift) does not mix at beta = 6. Paper v23 says so.
+  first leg, i.e. the reference kernel (no start-shift) does not mix at beta = 6. Confirmed by adding
+  the start-shift move to the reference kernel (`ptmbar.START_SHIFT`, tested against enumeration by
+  `reference/test_start_shift.py`): 96 runs at beta = 6 give +1.40 SEM (p = 0.16), run s.d. 0.049
+  instead of 0.461, MBAR error ratio 1.12 instead of 10.1. Paper v23 Table tab:beta has both kernels.
   Table tab:pq (30 single-ensemble chains) still has no recorded data or script.
 * **Raw reduced potentials** of the retained groups (`renyi_samples_*.bin`, 100 MB per run) are
   not in the repository or the review archives; they need a data deposit.

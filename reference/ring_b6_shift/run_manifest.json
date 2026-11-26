@@ -1,0 +1,12 @@
+{
+  "utc": "2026-11-26T00:25:35.336890+00:00",
+  "command": "python3 runmc.py 60000 SEED 6 shift for SEED in 1..96 (added in batches 1-24, 25-48, 49-96), one process per seed",
+  "sha256": {
+    "ptmbar.py": "404de841313cf1fab9eddb3b65787023dfca98e85d62c101aa804bf401a7e96f",
+    "runmc.py": "0d034397173045f3935acd2e4f03938a3464581fedc9a80a77629049fe64ae42"
+  },
+  "python": "3.13.4",
+  "numpy": "2.2.6",
+  "scipy": "1.16.3",
+  "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O"
+}

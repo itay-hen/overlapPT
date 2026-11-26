@@ -19,6 +19,14 @@ Recorded runs (regenerated 2026-11-25 after the external review; the original Fi
   Table tab:beta.
 - beta=6 is NOT consistent with exact (-2.62 SEM); lnF correlates with round trips (r = 0.89) and
   the residual builds up on the first leg: incomplete mixing of this kernel (no start-shift move).
+- `ring_b4_shift/` (24 runs) and `ring_b6_shift/` (96 runs, seeds 1-96, added in batches of 24, 24, 48):
+  `python3 runmc.py 60000 SEED BETA shift`, i.e. with `ptmbar.START_SHIFT = True` (start-shift move,
+  probability 0.2 per attempt). beta=6: lnF -0.3169 +- 0.0050 vs -0.32386 (+1.40 SEM, p = 0.16), run
+  s.d. 0.049 (0.461 without the move), no correlation with round trips. beta=4: -0.15 SEM, s.d. 0.041.
+  The first 48 beta=6 runs were +2.05 SEM, the next 48 -0.12 SEM; splitting runs into 8 pieces moves
+  the mean by 0.0017, so finite-sample MBAR bias is negligible.
+- `python3 test_start_shift.py [CHAINS] [SWEEPS]`: single-ensemble chains with and without the move
+  against enumerated P(q <= 4) at rung (0, 1/2), beta = 4 (24 chains x 40000 sweeps: all |z| <= 1.9).
 
 Known gaps:
 - Table tab:pq (30 single-ensemble chains at (0,0)) has no recorded data or script.
