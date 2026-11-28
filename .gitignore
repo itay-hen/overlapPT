@@ -29,3 +29,7 @@ models/**
 !models/*/runs_*/*.txt
 !models/*/runs_*/*/log_part*.txt
 !models/*/runs_*/*/overlap_plus.dat
+!models/*/runs_*/*/run_manifest.json
+!models/*/runs_*/*/run_seed_r*.txt
+!models/*/runs_*/build_metadata.json
+!models/*/runs_*/summary.txt

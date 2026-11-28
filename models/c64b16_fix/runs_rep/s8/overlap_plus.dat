@@ -1,0 +1,3 @@
+# beta lnF stderr N n_rungs n_samples stderr_status stderr_default_block
+# stderr_status: 0 usable; 1 grew with block length (stderr = largest scanned value); 2 unavailable (stderr = nan). Quote the spread over independent runs.
+16 -0.39140912851016729 0.047469153405573575 64 33 1500 0 0.047469153405573575

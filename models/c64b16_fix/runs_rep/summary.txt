@@ -1,0 +1,7 @@
+N=64 open TFIM chain, Gamma=1/2, beta=16, K=33, 1500 samples/rung, OVERLAP_PLUS + OV_CUT_FLIP + OV_INIT_CLASSICAL
+build: clean tree at 4e9037f, serial g++ (build_metadata.json); seeds 6401-6412 (s1..s12)
+exact (free fermion): lnF = -0.74488
+12 runs: mean -0.77196 +- 0.04883 (SEM); deviation -0.0271 = -0.55 SEM, Student-t p = 0.59
+run sd 0.169 vs mean MBAR stderr 0.068 (ratio 2.50); per-run z range -3.5..+7.5 (s8 = -0.391)
+PT round trips per run 269-490; corr(lnF, round trips) = +0.05 (p = 0.88)
+renyi_samples_a2_r0.bin (13 MB/run) kept locally, not committed

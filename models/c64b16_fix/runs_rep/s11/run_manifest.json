@@ -1,0 +1,51 @@
+[
+  {
+    "launch_utc": "2026-11-27T16:37:35.892099+00:00",
+    "binary": "overlap.bin",
+    "binary_sha256": "71180b0c325b339ecca2bf50767a6da21fc300d6a052f506a31347e432fe8c27",
+    "resumed": false,
+    "overlap_seed": "6411",
+    "build": {
+      "utc": "2026-11-27T16:37:28.801548+00:00",
+      "command": [
+        "g++",
+        "-O3",
+        "-std=c++17",
+        "-DOVERLAP_MODE",
+        "-DSEGMENT_EXCHANGE_MAX_ATTEMPTS=1",
+        "-DMBAR_FIXED_STRIDE_FACTOR=1",
+        "-DOVERLAP_PLUS",
+        "-DOV_CUT_FLIP=1",
+        "-DOV_INIT_CLASSICAL=1",
+        "-DBeta=16",
+        "-DMBAR_N_BETA=33",
+        "-Dqmax=800",
+        "-DMBAR_T_EQUIL=4000",
+        "-DMBAR_N_SAMPLES=1500",
+        "-DMBAR_KEEP_SAMPLES=1",
+        "-DSERIAL_MPI",
+        "-I",
+        "<SRC>/serial",
+        "-o",
+        "<MODEL>/build/overlap.bin",
+        "<MODEL>/build/mbarpt_mpi.cpp"
+      ],
+      "compiler": "g++",
+      "compiler_version": "Apple clang version 21.0.0 (clang-2100.4.1.1)",
+      "git_revision": "4e9037fb4dc322b95a22a29087765a303b43c1cf",
+      "git_tree_clean": true,
+      "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+      "sources_sha256": {
+        "divdiff.hpp": "9703f4b6f30160f50490e5d5670b4e686c3bdffb23f25aefe6d441a58c3b0f96",
+        "hamiltonian.hpp": "a708d8596904b72651b62bafa0d28ffde9bfe6cbce55aba3ec5173e648cefebd",
+        "hamiltonian2.hpp": "97ab508c7db772bd4faf1ff751f0d79525b06e42e74ed69bd2ca63d9d0c68e87",
+        "mainQMC.hpp": "f44dba1cf5b5aa5516d316fecf0fdec0de06555d87134fe73aaf78fa709d15ef",
+        "mbar_common.hpp": "5f1f6a1d788fc51ec9e098cd60985faee95b71afc3c6de59bee62320ecdaaabe",
+        "mbarpt_mpi.cpp": "2dce63db9874a6dfa79c17c6be04fdabfa08326b89cda383f4a3ddfd1b8fd7dc",
+        "parameters.hpp": "5e8ad284d8ade837ecb60d80db27f4cf01d6fceb928bc2161cdda6f90669f644",
+        "replica.hpp": "516bc6dbf7261e9b629cd3c79f863ebcfdc50610c4fca5a16821151d138338f2"
+      },
+      "binary_sha256": "71180b0c325b339ecca2bf50767a6da21fc300d6a052f506a31347e432fe8c27"
+    }
+  }
+]
