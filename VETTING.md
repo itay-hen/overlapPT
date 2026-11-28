@@ -389,3 +389,8 @@ N=64, beta=16, fixed sampler, 2 runs (6.2-6.4 h each, 1 core): lnF = -0.860 +- 0
 error bar (their 0.008 scatter is luck: N=32 shows run-to-run sd 0.23), so this is consistent with
 exact at the N=32 scatter but not yet quotable. Note 6 of the 7 beta=16 runs (N=32,64) fall below
 exact; a small negative bias ~0.05-0.1 nats is not excluded. Needs >= 5 replicas.
+
+2026-11-27: N=64 beta=16 replication, 12 seeded runs (seeds 6401-6412, clean build at 4e9037f,
+models/c64b16_fix/runs_rep): lnF = -0.772 +- 0.049 (SEM), exact -0.74488, -0.55 SEM (p=0.59);
+95% CI [-0.879,-0.664]. Run sd 0.169 = 2.5x mean per-run error 0.068; per-run z -3.5..+7.5;
+round trips 269-490, corr with lnF +0.05. The earlier -0.12 offset is not reproduced. In paper v23.
